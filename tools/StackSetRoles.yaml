@@ -1,0 +1,77 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: CSPM registration stackset roles
+
+Parameters:
+  StackSetAdminRole:
+    Type: String
+    Default: CNAPPStackSetAdminRole
+  StackSetExecRole:
+    Type: String
+    Default: CNAPPStackSetExecRole
+  EnvHash:
+    Type: String
+    Default: 'a1b2c'
+
+Resources:
+  StackSetAdministrationRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub ${StackSetAdminRole}-${EnvHash}
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          Action: sts:AssumeRole
+          Principal:
+            Service: cloudformation.amazonaws.com
+          Effect: Allow
+          Sid: ''
+      Policies:
+        - PolicyName: crowdstrike-stackset-execution
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Action: sts:AssumeRole
+                Resource: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/${StackSetExecRole}-${EnvHash}
+                Effect: Allow
+  StackSetExecutionRole:
+    Type: AWS::IAM::Role
+    DependsOn: StackSetAdministrationRole
+    Metadata:
+      cfn-lint:
+        config:
+          ignore_checks:
+            - EIAMPolicyWildcardResource # Role has * to allow for future service monitoring without stack updates
+            - EIAMPolicyActionWildcard # Role has * to allow for future service monitoring without stack updates
+    Properties:
+      RoleName: !Sub ${StackSetExecRole}-${EnvHash}
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          Action: sts:AssumeRole
+          Principal:
+            AWS: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/${StackSetAdminRole}-${EnvHash}
+          Effect: Allow
+          Sid: ''
+      Policies:
+        - PolicyName: crowdstrike-stackset-execution
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Action:
+                - events:DeleteRule
+                - events:PutTargets
+                - events:DescribeRule
+                - iam:PassRole
+                - events:EnableRule
+                - events:PutRule
+                - events:RemoveTargets
+                - events:DisableRule
+                Resource:
+                - !Sub arn:${AWS::Partition}:events:*:*:rule/cs-*
+                - !Sub arn:${AWS::Partition}:events:*:*:rule/*/cs-*
+                - !Sub arn:${AWS::Partition}:iam::*:role/CrowdStrike*
+                Effect: Allow
+              - Action: cloudformation:*
+                Resource: '*'
+                Effect: Allow
+ 

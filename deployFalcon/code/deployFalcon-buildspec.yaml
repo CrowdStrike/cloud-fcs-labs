@@ -1,0 +1,21 @@
+version: 0.2
+
+phases:
+  pre_build:
+    on-failure: ABORT
+    commands:
+      - echo "Creating kubeconfig for Amazon EKS..."
+      - aws eks --region $AWS_DEFAULT_REGION update-kubeconfig --name $EKS_CLUSTER_NAME
+      - curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash 
+      - helm repo add crowdstrike https://crowdstrike.github.io/falcon-helm
+      - KAC_IMAGE_TAG=$(aws ecr list-images --repository-name falcon-kac --query 'imageIds[*].imageTag' --output text) 
+      - sed -i "s~FALCON_CLIENT_ID~$FALCON_CLIENT_ID~" ./app/falcon/node_sensor.yaml
+      - sed -i "s~FALCON_CLIENT_SECRET~$FALCON_CLIENT_SECRET~" ./app/falcon/node_sensor.yaml  
+      - aws ecr get-login-password | docker login --username AWS --password-stdin 121607361004.dkr.ecr.us-east-1.amazonaws.com   
+  build:
+    on-failure: ABORT
+    commands:
+      - echo Deploy started on `date` 
+      - kubectl apply -f https://github.com/CrowdStrike/falcon-operator/releases/latest/download/falcon-operator.yaml
+      - kubectl create -f ./app/falcon/node_sensor.yaml
+      - . ./app/falcon/falcon-kac-helm.sh

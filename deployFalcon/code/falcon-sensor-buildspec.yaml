@@ -1,0 +1,16 @@
+version: 0.2
+
+phases:
+  pre_build:
+    commands:
+      - echo Install Dependencies
+      - apt-get update
+      - apt-get install -y ca-certificates
+      - curl -sSL -o falcon-container-sensor-pull.sh "https://raw.githubusercontent.com/CrowdStrike/falcon-scripts/main/bash/containers/falcon-container-sensor-pull/falcon-container-sensor-pull.sh"
+      - chmod +x falcon-container-sensor-pull.sh
+
+  build:
+    on-failure: ABORT
+    commands:
+      - echo "Running falcon-container-sensor-pull for daemonset"
+      - . ./sensor_image_import/falcon-pull-scripts.sh

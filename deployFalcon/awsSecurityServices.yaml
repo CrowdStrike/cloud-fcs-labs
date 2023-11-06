@@ -1,0 +1,29 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: reserved for future use
+
+Parameters:
+  # PermissionsBoundary:
+  #   Type: String
+  #   Default: ''
+  EnvAlias:
+    Type: String
+    Default: ''
+  EnvHash:
+    Type: String
+    Default: ''
+  S3Bucket:
+    Type: String
+    Default: ''
+
+# Conditions:
+#   PermissionsBoundary: !Not [ !Equals [ !Ref PermissionsBoundary, '' ] ]
+
+Resources:
+  #
+  # Enable GuardDuty in this region only
+  #
+  GDdetector:
+    Type: AWS::GuardDuty::Detector
+    Properties:
+      Enable: true
+      FindingPublishingFrequency: FIFTEEN_MINUTES

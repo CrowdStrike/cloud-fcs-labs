@@ -1,0 +1,79 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'Creates SSM Distributor deployment role and the SSM Association based on the Falcon SSM Distributor package.
+
+Parameters:
+  RoleName:
+    Type: String
+    Default: 'crowdstrike-distributor-deploy-role'
+    Description: 'Name of the IAM role to create'
+  SecretStorageMethod:
+    Type: String
+    Default: ParameterStore
+    Description: 'The method used to store the Falcon ClientId, ClientSecret, and Cloud for the CrowdStrike APIs.'
+    AllowedValues:
+      - 'ParameterStore'
+      - 'SecretsManager'
+
+Conditions:
+  UseSecretsManager: !Equals [!Ref SecretStorageMethod, 'SecretsManager']
+
+Resources:
+  SsmAutomationRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      RoleName: !Ref RoleName
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: 'Allow'
+            Principal:
+              Service: 'ssm.amazonaws.com'
+            Action: 'sts:AssumeRole'
+      ManagedPolicyArns:
+        - 'arn:aws:iam::aws:policy/service-role/AmazonSSMAutomationRole'
+        - !If
+            - UseSecretsManager
+            - 'arn:aws:iam::aws:policy/SecretsManagerReadWrite'
+            - !Ref 'AWS::NoValue'
+
+  AutomationExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ssm.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Path: /
+      ManagedPolicyArns:
+        - !Sub arn:${AWS::Partition}:iam::aws:policy/AmazonEC2FullAccess
+  AutomationAssociation:
+    Type: AWS::SSM::Association
+    Properties:
+      Name: AWS-StopEC2Instance
+      Parameters:
+        AutomationAssumeRole:
+          - !GetAtt AutomationExecutionRole.Arn
+      Targets:
+        - Key: ParameterValues
+          Values:
+            - i-1234567890abcdef0
+      AutomationTargetParameterName: InstanceId
+
+  AllInstanceIdsAssociation:
+    Type: AWS::SSM::Association
+    Properties:
+      AssociationName: UpdateSSMAgent
+      Name: AWS-UpdateSSMAgent
+      ScheduleExpression: cron(0 2 ? * SUN *)
+      Targets:
+      - Key: InstanceIds
+        Values:
+        - "*"
+      - Key: tag:Environment
+        Values:
+        - Production

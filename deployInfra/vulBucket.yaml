@@ -1,0 +1,247 @@
+AWSTemplateFormatVersion: 2010-09-09
+Parameters:
+  EnvAlias:
+    Type: String
+    Default: ''
+  EnvHash:
+    Type: String
+    Default: ''
+  # PermissionsBoundary:
+  #   Type: String
+  #   Default: ''
+  TemplateBucket:
+    Type: String
+    Default: ''
+  S3Prefix:
+    Type: String
+    Default: ''
+  SourceObjects:
+    Type: CommaDelimitedList
+    Default: "confidential-data.txt"
+# Conditions:
+  # PermissionsBoundary: !Not [ !Equals [ !Ref PermissionsBoundary, '' ] ]
+Resources:
+  ConfidentialBucket:
+    Type: 'AWS::S3::Bucket'
+    Properties:
+      AccessControl: Private
+      LoggingConfiguration:
+        DestinationBucketName: !Ref ConfidentialLoggingBucket
+        LogFilePrefix: testing-logs
+  ConfidentialLoggingBucket:
+    Type: 'AWS::S3::Bucket'
+    Properties:
+      AccessControl: LogDeliveryWrite
+      OwnershipControls:
+        Rules:
+          - ObjectOwnership: BucketOwnerPreferred
+  CopyRole:
+    Type: AWS::IAM::Role
+    Properties:
+      Path: /
+      # PermissionsBoundary:
+      #   Fn::If:
+      #     - PermissionsBoundary
+      #     - !Sub 'arn:aws:iam::${AWS::AccountId}:policy/${PermissionsBoundary}'
+          # - Ref: AWS::NoValue
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - !Sub 'arn:${AWS::Partition}:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'
+      Policies:
+        - PolicyName: ConfigPolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Sid: S3Get
+                Effect: Allow
+                Action:
+                  - s3:GetObject
+                Resource: !Sub 'arn:${AWS::Partition}:s3:::${TemplateBucket}/${S3Prefix}/*'
+                #  - SourceS3Bucket: !Ref TemplateBucket
+              - Sid: S3Put
+                Effect: Allow
+                Action:
+                  - s3:PutObject
+                  - s3:DeleteObject
+                Resource: !Sub 'arn:${AWS::Partition}:s3:::${ConfidentialBucket}/*'
+                #  - DestS3Bucket: !Ref ConfidentialBucket
+  CopyFiles:
+    Type: AWS::CloudFormation::CustomResource
+    Properties:
+      ServiceToken: !GetAtt CopyFilesFunction.Arn
+      DestRegion: !Ref "AWS::Region"
+      DestBucket: !Ref ConfidentialBucket
+      SourceBucket: !Join ['/', [!Ref TemplateBucket, !Ref S3Prefix]]
+      Objects: !Ref SourceObjects
+  CopyFilesFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Description: Copies objects from a source S3 bucket to a destination
+      Handler: index.handler
+      Runtime: python3.8
+      Role: !GetAtt CopyRole.Arn
+      Timeout: 240
+      Code:
+        ZipFile: |
+          import json
+          import logging
+          import threading
+          import boto3
+          import cfnresponse
+          def copy_objects(source_bucket, dest_bucket, objects):
+              s3 = boto3.client('s3')
+              for o in objects:
+                  copy_source = {
+                      'Bucket': source_bucket,
+                      'Key': o
+                  }
+                  s3.copy_object(CopySource=copy_source, Bucket=dest_bucket, Key=o)
+          def delete_objects(bucket, objects):
+              s3 = boto3.client('s3')
+              objects = {'Objects': [{'Key': o} for o in objects]}
+              s3.delete_objects(Bucket=bucket, Delete=objects)
+          def timeout(event, context):
+              logging.error('Execution is about to time out, sending failure response to CloudFormation')
+              cfnresponse.send(event, context, cfnresponse.FAILED, {}, None)
+          def handler(event, context):
+              # make sure we send a failure to CloudFormation if the function is going to timeout
+              timer = threading.Timer((context.get_remaining_time_in_millis() / 1000.00) - 0.5, timeout, args=[event, context])
+              timer.start()
+              print('Received event: %s' % json.dumps(event))
+              status = cfnresponse.SUCCESS
+              try:
+                  source_bucket = event['ResourceProperties']['SourceBucket']
+                  dest_bucket = event['ResourceProperties']['DestBucket']
+                  objects = event['ResourceProperties']['Objects']
+                  if event['RequestType'] == 'Delete':
+                      delete_objects(dest_bucket, objects)
+                  else:
+                      copy_objects(source_bucket, dest_bucket, objects)
+              except Exception as e:
+                  logging.error('Exception: %s' % e, exc_info=True)
+                  status = cfnresponse.FAILED
+              finally:
+                  timer.cancel()
+                  cfnresponse.send(event, context, status, {}, None)
+  CleanUpBucketRole:
+    Type: AWS::IAM::Role
+    Properties:
+      Path: /
+      # PermissionsBoundary:
+      #   Fn::If:
+      #     - PermissionsBoundary
+      #     - !Sub 'arn:aws:iam::${AWS::AccountId}:policy/${PermissionsBoundary}'
+          # - Ref: AWS::NoValue
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - !Sub 'arn:${AWS::Partition}:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'
+      Policies:
+        - PolicyName: ConfigPolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Sid: VisualEditor0
+                Effect: Allow
+                Action:
+                  - s3:DeleteObjectVersion
+                  - s3:ListBucketVersions
+                  - s3:GetBucketLogging
+                  - s3:ListBucket
+                  - ecr:BatchDeleteImage
+                  - ecr:ListImages
+                  - s3:GetObjectVersionAttributes
+                  - s3:GetBucketPolicy
+                  - ecr:DeleteRepository
+                  - s3:GetObjectVersionAcl
+                  - ecr:DescribeRepositories
+                  - s3:GetBucketOwnershipControls
+                  - s3:DeleteObject
+                  - s3:DeleteBucket
+                  - s3:ListBucketMultipartUploads
+                  - s3:GetBucketWebsite
+                  - s3:GetBucketVersioning
+                  - s3:GetBucketAcl
+                  - s3:GetBucketNotification
+                  - s3:GetObject
+                  - s3:GetBucketCORS
+                  - s3:GetObjectVersionForReplication
+                  - s3:GetBucketLocation
+                  - s3:GetObjectVersion
+                  - ecr:GetRepositoryPolicy
+                  - s3:ListAllMyBuckets
+                Resource: '*'
+
+  CleanUpBucket:
+    Type: AWS::CloudFormation::CustomResource
+    Properties:
+      ServiceToken: !GetAtt CleanUpBucketFunction.Arn
+      aws_region: !Ref "AWS::Region"
+      aws_account: !Ref "AWS::AccountId"
+      bucket_list:
+        - !Ref ConfidentialBucket
+        - !Ref ConfidentialLoggingBucket
+  CleanUpBucketFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Description: Called on stack deletion. Removes objects from S3 to enabled stack deletion to complete
+      Handler: index.handler
+      Runtime: python3.8
+      Role: !GetAtt CleanUpBucketRole.Arn
+      Timeout: 240
+      Code:
+        ZipFile: |
+          import json
+          import logging
+          import boto3
+          import cfnresponse
+          
+          logger = logging.getLogger()
+          logger.setLevel(logging.INFO)
+          
+          def delete_bucket(bucket):
+              s3 = boto3.resource('s3')
+              s3_bucket = s3.Bucket(bucket)
+              bucket_versioning = s3.BucketVersioning(bucket)
+              if bucket_versioning.status == 'Enabled':
+                response = s3_bucket.object_versions.delete()
+              else:
+                response = s3_bucket.objects.all().delete()
+              s3_bucket.delete()
+              logger.info('Delete object response {}'.format(response))
+    
+          def handler(event, context):
+              # Delete all objects and bucket
+              logger.info('Received event:{}'.format(json.dumps(event)))
+              status = cfnresponse.SUCCESS
+              # Delete the repositories int the list
+              try:
+                  repository_list = event['ResourceProperties']['repository_list']
+                  aws_account = event['ResourceProperties']['aws_account']
+                  aws_region = event['ResourceProperties']['aws_region']
+                  bucket_list = event['ResourceProperties']['bucket_list']
+                  if event['RequestType'] == 'Delete':
+                      # Delete the contents of the buckets
+                      for s3_bucket in bucket_list:
+                        delete_bucket(s3_bucket)
+              except Exception as error:
+                  logging.error('Exception: {}'.format(error))
+              finally:
+                  cfnresponse.send(event, context, status, {}, None)
+
+Outputs:
+  BucketName:
+    Value: !Ref ConfidentialBucket
+    Description: Name of the sample Amazon S3 bucket with a logging configuration.
+

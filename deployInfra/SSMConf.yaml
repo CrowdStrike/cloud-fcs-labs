@@ -1,0 +1,17 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: SSM Documents
+Resources:
+  SessionPreferencesDocument:
+    Type: AWS::SSM::Document
+    Properties:
+      Name: SSM-SessionManagerRunShell
+      Content:
+        schemaVersion: '1.0'
+        description: Document to hold regional settings for Session Manager Connect startup
+        sessionType: Standard_Stream
+        inputs:
+          idleSessionTimeout: '60'
+          shellProfile:
+            linux: "bash"
+      DocumentFormat: YAML
+      DocumentType: Session

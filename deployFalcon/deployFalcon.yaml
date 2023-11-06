@@ -1,0 +1,129 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'Entry Stack for the Dev.Days CNAP Workshop.  Creates an EKS cluster in a VPC with a loadbalancer-controller and a CodeBuild pipelines to buid
+              a container image and push to ECR whilst integrating with the CrowdStrike image scanning engine.'
+
+Parameters:
+  # Falcon Keys
+  FalconCID:
+    NoEcho: true
+    Description: 'Customer CID for the Falcon Installation'
+    Type: String
+  CrowdStrikeCloud:
+    Type: String
+    AllowedValues: ['us-1','us-2','eu-1']
+    Default: 'us-1'
+  FalconClientID:
+    NoEcho: true
+    Description: 'Client ID for the Falcon API'
+    Type: String
+  FalconClientSecret:
+    NoEcho: true
+    Description: 'Client Secret for the Falcon API'
+    Type: String
+  DeployCSPM:
+    Description: registers AWS account with Falcon CloudSecurity Posture Management
+    Type: String
+    Default: 'true'
+    AllowedValues:
+         - 'true'
+         - 'false'
+  DeployCSPMSampleDetections: 
+    Description: generates sample misconfigurations and suspicious API behavior to show Falcon Cloud Security detections
+    Type: String
+    Default: 'true'
+    AllowedValues:
+         - 'true'
+         - 'false'
+ 
+  # Environment Vars
+  EnvAlias:
+    Type: String
+    Default: 'fcs-lab'
+  EnvHash:
+    Type: String
+    Default: ''
+  # AWS Account Dependencies
+  S3Bucket:
+    Type: String
+    Default: ''
+  S3Prefix:
+    Type: String
+    Default: 'deployFalcon'
+  EKSClusterName:
+    Type: String
+    Default: 'fcs-lab-EKS-cluster'
+
+  # PermissionsBoundary:
+  #   Type: String
+  #   Default: 'BoundaryForAdministratorAccess'
+  # KeyPairName:
+  #   Type: String
+  #   Default: ''
+  # Shared K8S Attributes
+  # # Optional
+  # RemoteAccessCIDR:
+  #   Type: String
+  #   Default: 1.1.1.1/32
+  # AMIReleaseVersion:
+  #   Type: String
+  #   Default: "1.24.11-20230411"
+
+Conditions:
+  DeployCSPMStack: !Equals 
+    - !Ref DeployCSPM
+    - true
+  DeploySampleIOAsIOMs: !Equals
+    - !Ref DeployCSPMSampleDetections
+    - true
+
+Resources:
+
+  CodePipelineStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub 'https://${S3Bucket}.s3.amazonaws.com/${S3Prefix}/codePipeline.yaml'
+      Parameters:
+        EnvAlias: !Ref EnvAlias
+        EnvHash: !Ref EnvHash
+        FalconClientID: !Ref FalconClientID
+        FalconClientSecret: !Ref FalconClientSecret
+        FalconCID: !Ref FalconCID
+        CrowdStrikeCloud: !Ref CrowdStrikeCloud
+        S3CodeBucketName: !Ref S3Bucket
+        S3Prefix: !Ref S3Prefix
+        S3CodeBucketKey: code.zip
+        EKSCodeBuildServiceRoleArn: !Sub arn:aws:iam::${AWS::AccountId}:role/fcsworkshop-admin 
+        EKSClusterName: !Ref EKSClusterName
+        PodS3AccessRoleArn: !Sub arn:aws:iam::${AWS::AccountId}:role/fcs-lab-pod-s3-access
+        # PermissionsBoundary: !Ref PermissionsBoundary
+        WafRulesARN: !GetAtt WAFRules.Outputs.WebACLARN
+        KaliPublicIp: !ImportValue KaliPublicIp
+
+  CSPMSetup:
+    Type: AWS::CloudFormation::Stack
+    Condition: DeployCSPMStack
+    Properties:
+      TemplateURL: !Sub 'https://${S3Bucket}.s3.amazonaws.com/${S3Prefix}/cspm.yaml'
+      Parameters:
+        EnvHash:  !Ref EnvHash
+        CSCloud: !Ref CrowdStrikeCloud
+        FalconClientID: !Ref FalconClientID
+        FalconSecret: !Ref FalconClientSecret
+        # PermissionsBoundary: !Ref PermissionsBoundary
+        # EnvAlias: !Ref EnvAlias
+        # KeyPairName: !Ref KeyPairName
+ 
+  WAFRules:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub 'https://${S3Bucket}.s3.amazonaws.com/${S3Prefix}/wafACL.yaml'
+
+  IOAIOMSetup:
+    Type: AWS::CloudFormation::Stack
+    Condition: DeploySampleIOAsIOMs
+    Properties:
+      TemplateURL: !Sub 'https://${S3Bucket}.s3.amazonaws.com/${S3Prefix}/ioa-iom.yaml'
+      # Parameters:
+        # KeyPairName: !Ref KeyPairName
+        # PermissionsBoundary: !Ref PermissionsBoundary

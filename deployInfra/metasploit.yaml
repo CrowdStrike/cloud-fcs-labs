@@ -1,0 +1,285 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: This template creates the a VPC for an isolated testing environment. It will deploy a Kali (attacker) instance running in a dedicated vpc. Access to the Victim application is only available via its public addresses.
+
+Parameters:
+  EnvAlias:
+    Type: String
+    Default: ''
+  EnvHash:
+    Type: String
+    Default: ''
+  NATGatewayEIP:
+    Type: String
+    Default: ''
+  S3Bucket:
+    Type: String
+    Default: ''
+  S3Prefix:
+    Type: String
+    Default: ''
+  # PermissionsBoundary:
+  #   Type: String
+  #   Default: ''
+  Owner:
+    Type: String
+    Description: Owner/Creator of resource
+    MaxLength: 20
+    Default: CrowdStrike
+  Business:
+      Type: String
+      Description: Department
+      MaxLength: 20
+      Default: DevDays
+  Accounting:
+    Type: String
+    Description: Billing Account
+    MaxLength: 20
+    Default: DevDays
+  Department:
+    Type: String
+    Description: Department
+    MaxLength: 20
+    Default: DevDays
+  # KeyPairName:
+  #   Description: Public/private key pairs allow you to securely connect to your instance
+  #     after it launches
+  #   Type: AWS::EC2::KeyPair::KeyName
+  #   Default: ''
+  PublicSubnetCIDR:
+    AllowedPattern: ^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\/(1[6-9]|2[0-8]))$
+    ConstraintDescription: CIDR block parameter must be in the form x.x.x.x/16-28
+    Default: 10.0.128.0/20
+    Description: CIDR Block for the public DMZ subnet for secure administrative entry
+    Type: String
+  VPCCIDR:
+    AllowedPattern: ^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\/(1[6-9]|2[0-8]))$
+    ConstraintDescription: CIDR block parameter must be in the form x.x.x.x/16-28
+    Default: 10.0.0.0/16
+    Description: CIDR Block for the VPC
+    Type: String
+  # RemoteAccessCIDR:
+  #   Default: 1.1.1.1/32
+  #   AllowedPattern: ^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\/([0-9]|[1-2][0-9]|3[0-2]))$
+  #   Description: Trusted Source IP
+  #   Type: String
+  LatestKaliAMI:
+    Type: AWS::EC2::Image::Id
+#    us-east-2 :ami-00f2e79091d9064be
+#    Default: ami-00f2e79091d9064be
+#    us-west-2: ami-03748e24fab766cfc
+#    BYOA: ami-00a13348091ba2a87
+#    us-east-1 : ami-04a641bd18c613b04
+    Default: ami-04a641bd18c613b04
+
+# Conditions:
+#   PermissionsBoundary: !Not [ !Equals [ !Ref PermissionsBoundary, '' ] ]
+  
+Resources:
+  Metasploit:
+    Type: AWS::EC2::Instance
+    Properties:
+      NetworkInterfaces:
+        - AssociatePublicIpAddress: "true"
+          DeviceIndex: "0"
+          GroupSet:
+            - Ref: 'KaliSecurityGroup'
+          SubnetId:
+            Ref: KaliPublicSubnet
+      # KeyName: !Ref 'KeyPairName'
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          set -x
+          export aws_region=${AWS::Region}
+          export KALI_PUB_IP=$(curl http://169.254.169.254/latest/meta-data/public-ipv4)
+          exec 3>&1 4>&2
+          trap 'exec 2>&4 1>&3' 0 1 2 3
+          exec 1>/tmp/log.out 2>&1
+          aws s3 cp s3://${S3Bucket}/${S3Prefix}/setup-debian-msploit.sh /tmp/setup-debian-msploit.sh
+          chmod +x /tmp/setup-debian-msploit.sh
+          /tmp/setup-debian-msploit.sh
+          aws s3 cp s3://${S3Bucket}/${S3Prefix}/start-msploit.sh /home/admin/start-msploit.sh
+          chmod +x /home/admin/start-msploit.sh
+          mkdir /home/ssm-user
+          touch /home/ssm-user/.bashrc
+          echo "sudo su admin" >> /home/ssm-user/.bashrc
+          echo "export AWS_REGION=${AWS::Region}" | tee -a /home/admin/.bashrc
+          echo "export AWS_DEFAULT_REGION=${AWS::Region}" | tee -a /home/admin/.bashrc
+          echo "cd ~" | tee -a /home/admin/.bashrc
+
+      InstanceType: m4.large
+      AvailabilityZone: !Select
+        - 0
+        - !GetAZs
+          Ref: 'AWS::Region'
+      IamInstanceProfile: !Ref KaliBootstrapInstanceProfile
+      ImageId: !Ref 'LatestKaliAMI'
+      Tags:
+        - Key: Name
+          Value: 'Kali'
+        - Key: CRWD_MANAGED
+          Value: 'YES'
+        - Key: ci-key-username
+          Value: 'kali'
+        - Key: tag-accounting
+          Value: !Ref Accounting
+        - Key: tag-business
+          Value: !Ref Business
+        - Key: tag-department
+          Value: !Ref Department
+        - Key: tag-owner
+          Value: !Ref Owner
+  KaliBootstrapInstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Path: /
+      Roles:
+        - !Ref 'KaliIAMRole'
+  KaliVPC:
+    Type: AWS::EC2::VPC
+    Metadata:
+      cfn-lint:
+        config:
+          ignore_checks: [ W60 ]
+    Properties:
+      CidrBlock: !Ref 'VPCCIDR'
+      InstanceTenancy: default
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      Tags:
+        - Key: Name
+          Value: "Kali VPC"
+  KaliInternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Network
+          Value: Public
+  VPCGatewayAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId:
+        Ref: KaliVPC
+      InternetGatewayId: !Ref 'KaliInternetGateway'
+  KaliPublicSubnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId:
+        Ref: KaliVPC
+      CidrBlock: !Ref 'PublicSubnetCIDR'
+      AvailabilityZone: !Select
+        - 0
+        - !GetAZs
+          Ref: 'AWS::Region'
+      Tags:
+        - Key: Name
+          Value: Public subnet
+        - Key: Network
+          Value: Public
+        - Key: CreatedBy
+          Value: GuardDuty Test Script
+      MapPublicIpOnLaunch: true
+  KaliPublicSubnetRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId:
+        Ref: KaliVPC
+      Tags:
+        - Key: Name
+          Value: Public Subnets
+        - Key: Network
+          Value: Public
+  KaliPublicSubnetRoute:
+    DependsOn:
+      - VPCGatewayAttachment
+      - KaliVPC
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId:
+        Ref: KaliPublicSubnetRouteTable
+      DestinationCidrBlock: '0.0.0.0/0'
+      GatewayId:
+        Ref: KaliInternetGateway
+  KaliPublicSubnetRouteTableAssociation:
+    DependsOn: KaliVPC
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId:
+        Ref: KaliPublicSubnet
+      RouteTableId:
+        Ref: KaliPublicSubnetRouteTable
+
+  KaliSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Port 80 and 443 open to VPC NATGW for exploit
+      VpcId:
+        Ref: KaliVPC
+      SecurityGroupIngress:
+        # - IpProtocol: tcp
+        #   FromPort: 22
+        #   ToPort: 22
+        #   CidrIp: !Ref 'RemoteAccessCIDR'
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: !Sub "${NATGatewayEIP}/32"
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: !Sub "${NATGatewayEIP}/32"
+  KaliIAMRole:
+    Type: AWS::IAM::Role
+    Properties:
+      # PermissionsBoundary:
+      #   Fn::If:
+      #     - PermissionsBoundary
+      #     - !Sub 'arn:aws:iam::${AWS::AccountId}:policy/${PermissionsBoundary}'
+      #     - Ref: AWS::NoValue
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ec2.amazonaws.com
+            Action: sts:AssumeRole
+      Path: /
+      ManagedPolicyArns:
+        - 'arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore'
+        - 'arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess'
+      Policies:
+        - PolicyName: KaliRolePolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: sts:*
+                Resource: "*"
+              - Sid: VisualEditor0
+                Effect: Allow
+                Action:
+                  - elasticloadbalancing:DescribeLoadBalancers
+                  - ec2:DescribeInstances
+                  - logs:Describe*
+                  - logs:StartQuery
+                  - securityhub:BatchUpdateFindings
+                  - securityhub:BatchImportFindings
+                  - securityhub:ListEnabledProductsForImport
+                  - logs:FilterLogEvents
+                  - logs:List*
+                  - ec2messages:AcknowledgeMessage
+                  - logs:StopQuery
+                  - logs:Get*
+                  - ec2messages:SendReply
+                  - ec2messages:DeleteMessage
+                  - ec2messages:FailMessage
+                  - logs:TestMetricFilter
+                Resource: "*"
+
+Outputs:
+
+  KaliPublicIp:
+    Description: Public IP of the Kali/Metasploit host to lock down the vulnerable container
+    Value: !Join ['/', [!GetAtt Metasploit.PublicIp, '32']] 
+    Export: 
+      Name: 'KaliPublicIp'
