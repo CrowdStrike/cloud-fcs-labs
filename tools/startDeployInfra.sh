@@ -4,11 +4,12 @@ NC="\033[0;0m"
 
 env_up(){
 
-EnvHash=$(LC_ALL=C tr -dc a-z0-9 </dev/urandom | head -c 5)
-S3Bucket=fcs-stack-${EnvHash}
+# EnvHash=$(LC_ALL=C tr -dc a-z0-9 </dev/urandom | head -c 5)
+EnvHash=$(aws ssm get-parameter --name=EnvHash --query 'Parameter.Value' --output text)
+S3Bucket=$(aws ssm get-parameter --name=S3Bucket --query 'Parameter.Value' --output text)
 AWS_REGION='us-east-1'
 S3Prefix='deployInfra'
-StackName=fcs-infra-stack-${EnvHash}
+StackName=$(aws ssm get-parameter --name=InfraStack --query 'Parameter.Value' --output text)
 TemplateName='deployInfra.yaml'
 
    echo 
@@ -25,9 +26,9 @@ TemplateName='deployInfra.yaml'
    aws cloudformation create-stack --stack-name $StackName --template-url https://${S3Bucket}.s3.amazonaws.com/${S3Prefix}/${TemplateName} --region $AWS_REGION --disable-rollback \
    --capabilities CAPABILITY_NAMED_IAM CAPABILITY_IAM CAPABILITY_AUTO_EXPAND \
    --parameters \
-   ParameterKey=S3Bucket,ParameterValue=${S3Bucket} \
+   ParameterKey=S3Bucket,ParameterValue=S3Bucket \
    ParameterKey=S3Prefix,ParameterValue=${S3Prefix} \
-   ParameterKey=EnvHash,ParameterValue=$EnvHash
+   ParameterKey=EnvHash,ParameterValue=EnvHash
 
     echo "The Cloudformation stack will take 20-30 minutes to complete.$NC"
     echo "\n\nCheck the status at any time with the command \n\naws cloudformation describe-stacks --stack-name $StackName --region $AWS_REGION$NC\n\n"

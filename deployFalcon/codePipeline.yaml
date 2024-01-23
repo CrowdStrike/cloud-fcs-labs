@@ -114,7 +114,7 @@ Resources:
   SMFalconAPIKey:
     Type: AWS::SecretsManager::Secret
     Properties:
-      Name: 'FalconAPIKey'
+      Name: !Sub 'FalconAPIKey-${EnvHash}' 
       Description: 'Client ID and Secret for the Falcon API'
       SecretString: !Sub |
         {

@@ -11,7 +11,7 @@ phases:
       - KAC_IMAGE_TAG=$(aws ecr list-images --repository-name falcon-kac --query 'imageIds[*].imageTag' --output text) 
       - sed -i "s~FALCON_CLIENT_ID~$FALCON_CLIENT_ID~" ./app/falcon/node_sensor.yaml
       - sed -i "s~FALCON_CLIENT_SECRET~$FALCON_CLIENT_SECRET~" ./app/falcon/node_sensor.yaml  
-      - aws ecr get-login-password | docker login --username AWS --password-stdin 121607361004.dkr.ecr.us-east-1.amazonaws.com   
+      - aws ecr get-login-password | docker login --username AWS --password-stdin ${REPO_URI}   
   build:
     on-failure: ABORT
     commands:

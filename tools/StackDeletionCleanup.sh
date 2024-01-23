@@ -46,29 +46,38 @@ read -n 4 -p  "Do you want to delete S3 bucket: $trailbucket [yes]: " DeleteTB
 DeleteTB=${DeleteTB:=yes}
 if [[ $DeleteTB = "yes" ]]
 then
-aws s3 rm --recursive s3://$trailbucket
-aws s3 rb s3://$trailbucket --force
+aws s3 rm --recursive --quiet s3://$trailbucket
+aws s3 rb --force s3://$trailbucket 
 echo "Bucket $trailbucket deleted!"
 else
 echo "Did not delete $trailbucket"
 fi
 fi
 
-
-
+# Time for the CSPM StackSet instance to delete
 sleep 60
 
 # Delete deployFalcon CloudFormation stacks
-tmpStackNameFalcon=$(aws cloudformation describe-stacks --query 'Stacks[*].[StackName]' --output text | grep fcs-falcon-stack)
-tmpEnvHashFalcon="${tmpStackNameFalcon:0:22}"                                                                                                                                                                                                                   
-echo $tmpEnvHashFalcon
-aws cloudformation delete-stack --stack-name $tmpEnvHashFalcon
+
+tmpStackNameWaf=$(aws cloudformation describe-stacks --query 'Stacks[*].[StackName]' --output text | grep WAF)
+num=$(awk -v a="$tmpStackNameWaf" -v b="-WAFRules" 'BEGIN{print index(a,b)}')
+tmpStackNameFalcon=${tmpStackNameWaf:0:$num-1}
+echo $tmpStackNameFalcon
+aws cloudformation delete-stack --stack-name $tmpStackNameFalcon
 
 #-----------------------#                       
 #  deployInfra cleanup  #
 #-----------------------# 
 
 ## If you run this section separately (after running deployFalcon stack deletion) Run from AWS CloudShell
+
+# Delete eksctl stacks 
+aws cloudformation delete-stack --stack-name eksctl-fcs-lab-EKS-cluster-addon-iamserviceaccount-kube-system-aws-load-balancer-controller
+aws cloudformation delete-stack --stack-name eksctl-fcs-lab-EKS-cluster-addon-iamserviceaccount-default-pod-s3-access
+aws cloudformation delete-stack --stack-name eksctl-fcs-lab-EKS-cluster-nodegroup-nodegroup
+aws cloudformation delete-stack --stack-name eksctl-fcs-lab-EKS-cluster-addon-iamserviceaccount-kube-system-aws-node
+sleep 300
+aws cloudformation delete-stack --stack-name eksctl-fcs-lab-EKS-cluster-cluster
 
 # S3 bucket empyting and deletion. 
 loggingbucket=$(aws s3api list-buckets --query 'Buckets[*].[Name]' --output text | grep confidentiallogging)
@@ -78,7 +87,7 @@ read -n 4 -p  "Do you want to empty the contents of S3 bucket: $loggingbucket [y
 DeleteLB=${DeleteLB:=yes}
 if [[ $DeleteLB = "yes" ]]
 then
-aws s3 rm --recursive s3://$loggingbucket
+aws s3 rm --recursive --quiet s3://$loggingbucket
 echo "Bucket $loggingbucket emptied!"
 else
 echo "Did not empty $loggingbucket"
@@ -86,15 +95,5 @@ fi
 fi
 
 # Delete deployInfra CloudFormation stacks
-tmpStackNameInfra=$(aws cloudformation describe-stacks --query 'Stacks[*].[StackName]' --output text | grep fcs-infra-stack)
-tmpEnvHashInfra="${tmpStackNameInfra:0:21}"                                                                                                                                                                                                                                                                                                                                                                                                                                      
-echo $tmpEnvHashInfra
-aws cloudformation delete-stack --stack-name $tmpEnvHashInfra
-
-# Delete eksctl stacks 
-aws cloudformation delete-stack --stack-name eksctl-fcs-lab-EKS-cluster-addon-iamserviceaccount-kube-system-aws-load-balancer-controller
-aws cloudformation delete-stack --stack-name eksctl-fcs-lab-EKS-cluster-addon-iamserviceaccount-default-pod-s3-access
-aws cloudformation delete-stack --stack-name eksctl-fcs-lab-EKS-cluster-nodegroup-nodegroup
-aws cloudformation delete-stack --stack-name eksctl-fcs-lab-EKS-cluster-addon-iamserviceaccount-kube-system-aws-node
-sleep 300
-aws cloudformation delete-stack --stack-name eksctl-fcs-lab-EKS-cluster-cluster
+StackName=$(aws ssm get-parameter --name=InfraStack --query 'Parameter.Value' --output text)
+aws cloudformation delete-stack --stack-name $StackName

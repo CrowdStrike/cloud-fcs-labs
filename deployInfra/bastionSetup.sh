@@ -18,7 +18,7 @@ function install_kubernetes_client_tools() {
     ln -s /usr/local/bin/kubectl /opt/aws/bin
 
     # cat > /etc/profile.d/kubectl.sh <<EOF
-    #!/bin/bash
+    # !/bin/bash
     # source <(/usr/local/bin/kubectl completion bash)
     # EOF
     # chmod +x /etc/profile.d/kubectl.sh
@@ -29,7 +29,8 @@ function install_kubernetes_client_tools() {
     mv ./linux-amd64/helm /usr/local/bin/helm
     ln -s /usr/local/bin/helm /opt/aws/bin
     rm -rf ./linux-amd64/
-# Install awscli v2
+
+    # Install awscli v2
     curl -O "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip"
     unzip -o awscli-exe-linux-x86_64.zip
     sudo ./aws/install
@@ -45,20 +46,30 @@ function setup_kubeconfig() {
     aws eks update-kubeconfig --name fcs-lab-EKS-cluster --region ${region}
 
   # AWS Load Balancer Controller install script
-    cat >lbc-deploy.sh <<EOF
-    helm repo add eks https://aws.github.io/eks-charts
-    helm install aws-load-balancer-controller eks/aws-load-balancer-controller -n kube-system --set clusterName=fcs-lab-EKS-cluster --set serviceAccount.create=false --set serviceAccount.name=aws-load-balancer-controller
-    
-EOF
+    # cat >lbc-deploy.sh <<EOF
+    # helm repo add eks https://aws.github.io/eks-charts
+    # helm install aws-load-balancer-controller eks/aws-load-balancer-controller -n kube-system --set clusterName=fcs-lab-EKS-cluster --set serviceAccount.create=false --set serviceAccount.name=aws-load-balancer-controller
+    # EOF
 
     # Add SSM Config for ssm-user
     /sbin/useradd -d /home/ssm-user -u 1001 -s /bin/bash -m --user-group ssm-user
     mkdir -p /home/ssm-user/.kube/
     cp ~/.kube/config /home/ssm-user/.kube/config
     cp lbc-deploy.sh /home/ssm-user/
+    cp /etc/profile.d/kubectl.sh /home/ssm-user/  
+    
+    instanceId=$(curl -s http://169.254.169.254/latest/meta-data/instance-id)
+    stackName=$(aws ec2 describe-tags --filters "Name=resource-id,Values=$instanceId" "Name=key,Values=aws:cloudformation:stack-name" --query 'Tags[*].Value' --output text)
+    EnvHash=${stackName:16:5}
+    S3Bucket=fcs-stack-${EnvHash}
+    cd /tmp
+    aws s3 cp s3://$S3Bucket/StackDeletionCleanup.sh StackDeletionCleanup.sh
+    cp ./StackDeletionCleanup.sh /home/ssm-user/ 
     chown -R ssm-user:ssm-user /home/ssm-user/
     chmod -R og-rwx /home/ssm-user/.kube
     chmod +x /home/ssm-user/lbc-deploy.sh
+    chmod +x /home/ssm-user/kubectl.sh
+    chmod +x /home/ssm-user/StackDeletionCleanup.sh
 
 }
 

@@ -26,12 +26,12 @@ Parameters:
     Type: String
     Default: 'fcs-lab'
   EnvHash:
-    Type: String
-    Default: ''
+    Type: 'AWS::SSM::Parameter::Value<String>'
+    Default: 'EnvHash' 
   # AWS Account Dependencies
   S3Bucket:
-    Type: String
-    Default: ''
+    Type: 'AWS::SSM::Parameter::Value<String>'
+    Default: 'S3Bucket'
   S3Prefix:
     Type: String
     Default: 'deployInfra'
@@ -60,6 +60,15 @@ Parameters:
 
 Resources:
 
+  # EnvHashParameter:
+  #   Type: AWS::SSM::Parameter
+  #   Properties:
+  #     AllowedPattern: "^[a-zA-Z0-9]*$"
+  #     Description: EnvHash parameter for related stacks
+  #     Name: "EnvHash"
+  #     Type: String
+  #     Value: !Ref EnvHash
+  
   IAMStack:
     Type: AWS::CloudFormation::Stack
     Properties:

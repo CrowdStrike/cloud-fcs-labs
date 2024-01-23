@@ -39,8 +39,7 @@ TemplateName='deployFalcon.yaml'
    read -p "Generate cloud IoA and IoM sample detections [true]: " IOAIOMDeploy
    IOAIOMDeploy=${IOAIOMDeploy:=true} 
 
-   tmpStackNameInfra=$(aws cloudformation describe-stacks --query 'Stacks[*].[StackName]' --output text | grep fcs-infra-stack)
-   tmpEnvHash="${tmpStackNameInfra:16:5}"                                                                                                                                                                                                                   
+   tmpEnvHash=$(aws ssm get-parameter --name EnvHash --query 'Parameter.Value' --output text)                                                                                                                                                                                                                 
 
    S3Bucket=fcs-stack-${tmpEnvHash}
    StackName=fcs-falcon-stack-${tmpEnvHash}

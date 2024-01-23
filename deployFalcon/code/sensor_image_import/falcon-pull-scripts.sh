@@ -1,6 +1,6 @@
 # /bin/bash
 
-aws ecr get-login-password | docker login --username AWS --password-stdin 121607361004.dkr.ecr.us-east-1.amazonaws.com
+aws ecr get-login-password | docker login --username AWS --password-stdin ${REPO_URI}
 
 ./falcon-container-sensor-pull.sh \
 -u $FALCON_CLIENT_ID \
