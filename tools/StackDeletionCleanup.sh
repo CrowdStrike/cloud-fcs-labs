@@ -76,8 +76,6 @@ aws cloudformation delete-stack --stack-name eksctl-fcs-lab-EKS-cluster-addon-ia
 aws cloudformation delete-stack --stack-name eksctl-fcs-lab-EKS-cluster-addon-iamserviceaccount-default-pod-s3-access
 aws cloudformation delete-stack --stack-name eksctl-fcs-lab-EKS-cluster-nodegroup-nodegroup
 aws cloudformation delete-stack --stack-name eksctl-fcs-lab-EKS-cluster-addon-iamserviceaccount-kube-system-aws-node
-sleep 300
-aws cloudformation delete-stack --stack-name eksctl-fcs-lab-EKS-cluster-cluster
 
 # S3 bucket empyting and deletion. 
 loggingbucket=$(aws s3api list-buckets --query 'Buckets[*].[Name]' --output text | grep confidentiallogging)
@@ -94,6 +92,11 @@ echo "Did not empty $loggingbucket"
 fi
 fi
 
-# Delete deployInfra CloudFormation stacks
+# After cluster nodegroup stack deletes, delete the cluster
+sleep 300
+aws cloudformation delete-stack --stack-name eksctl-fcs-lab-EKS-cluster-cluster
+
+
+# Delete deployInfra CloudFormation stacks based on stackname stored parameter
 StackName=$(aws ssm get-parameter --name=InfraStack --query 'Parameter.Value' --output text)
 aws cloudformation delete-stack --stack-name $StackName
