@@ -4,12 +4,14 @@ NC="\033[0;0m"
 
 env_up(){
 
-# EnvHash=$(LC_ALL=C tr -dc a-z0-9 </dev/urandom | head -c 5)
-EnvHash=$(aws ssm get-parameter --name=EnvHash --query 'Parameter.Value' --output text)
-S3Bucket=$(aws ssm get-parameter --name=S3Bucket --query 'Parameter.Value' --output text)
+EnvHash=$(LC_ALL=C tr -dc a-z0-9 </dev/urandom | head -c 5)
+S3Bucket="fcslab-${EnvHash}"
+#EnvHash=$(aws ssm get-parameter --name=EnvHash --query 'Parameter.Value' --output text)
+#S3Bucket=$(aws ssm get-parameter --name=S3Bucket --query 'Parameter.Value' --output text)
 AWS_REGION='us-east-1'
 S3Prefix='deployInfra'
-StackName=$(aws ssm get-parameter --name=InfraStack --query 'Parameter.Value' --output text)
+#StackName=$(aws ssm get-parameter --name=InfraStack --query 'Parameter.Value' --output text)
+StackName="fcslab-stack-${EnvHash}"
 TemplateName='deployInfra.yaml'
 
    echo 
