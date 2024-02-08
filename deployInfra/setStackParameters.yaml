@@ -47,14 +47,14 @@ Resources:
       Type: String
       Value: !Ref EnvHash
 
-  S3BucketParameter:
-    Type: AWS::SSM::Parameter
-    Condition: SetS3Bucket
-    Properties:
-      Description: EnvHash parameter for related stacks
-      Name: "FCSLab-EnvHash"
-      Type: String
-      Value: !Ref S3Bucket
+  # S3BucketParameter:
+  #   Type: AWS::SSM::Parameter
+  #   Condition: SetS3Bucket
+  #   Properties:
+  #     Description: EnvHash parameter for related stacks
+  #     Name: "FCSLab-S3Bucket"
+  #     Type: String
+  #     Value: !Ref S3Bucket
 
   InfraStackParameter:
     Type: AWS::SSM::Parameter

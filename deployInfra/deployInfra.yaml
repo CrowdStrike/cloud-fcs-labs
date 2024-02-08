@@ -67,14 +67,19 @@ Conditions:
 
 Resources:
 
+  S3BucketParameter:
+    Type: AWS::SSM::Parameter
+    Condition: SetS3BucketParameter
+    Properties:
+      Description: S3Bucket parameter for related stacks
+      Name: "FCSLab-S3Bucket"
+      Type: String
+      Value: !Ref S3Bucket
+
   ParameterStack:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: 
-        - !If 
-          - SetS3BucketParameter
-          - !Sub 'https://${S3Bucket}.s3.amazonaws.com/${S3Prefix}/setStackParameters.yaml'
-          - !Sub 'https://{{resolve:ssm:FCSLab-S3Bucket}}.s3.amazonaws.com/${S3Prefix}/setStackParameters.yaml'
+      TemplateURL: !Sub 'https://{{resolve:ssm:FCSLab-S3Bucket}}.s3.amazonaws.com/${S3Prefix}/setStackParameters.yaml'
       Parameters:
         EnvHash: 
           - !If [SetEnvHashParameter, !Ref EnvHash, '{{resolve:ssm:FCSLab-EnvHash}}']
