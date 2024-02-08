@@ -71,7 +71,8 @@ Resources:
     Type: AWS::CloudFormation::Stack
     Properties:
       TemplateURL: 
-        - !If SetS3BucketParameter
+        - !If 
+          - SetS3BucketParameter
           - !Sub 'https://${S3Bucket}.s3.amazonaws.com/${S3Prefix}/setStackParameters.yaml'
           - !Sub 'https://{{resolve:ssm:FCSLab-S3Bucket}}.s3.amazonaws.com/${S3Prefix}/setStackParameters.yaml'
       Parameters:
