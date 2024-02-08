@@ -78,10 +78,18 @@ Resources:
       Parameters:
         EnvHash: 
           - !If [SetEnvHashParameter, !Ref EnvHash, '{{resolve:ssm:FCSLab-EnvHash}}']
-        SetEnvHashParameter: !Condition SetEnvHashParameter 
+        SetEnvHashParameter: 
+          - !If
+            - SetEnvHashParameter 
+            - "true"
+            - "false"
         S3Bucket: 
           - !If [SetS3BucketParameter, !Ref S3Bucket, '{{resolve:ssm:FCSLab-S3Bucket}}']
-        SetS3BucketParameter: !Condition SetS3BucketParameter
+        SetS3BucketParameter: 
+          - !If
+            - SetS3BucketParameter
+            - "true"
+            - "false"
 
   IAMStack:
     Type: AWS::CloudFormation::Stack
