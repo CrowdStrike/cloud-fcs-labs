@@ -29,17 +29,17 @@ Parameters:
       Type: String
       Description: Department
       MaxLength: 20
-      Default: DevDays
+      Default: fcs-lab
   Accounting:
     Type: String
     Description: Billing Account
     MaxLength: 20
-    Default: DevDays
+    Default: fcs-lab
   Department:
     Type: String
     Description: Department
     MaxLength: 20
-    Default: DevDays
+    Default: fcs-lab
   # KeyPairName:
   #   Description: Public/private key pairs allow you to securely connect to your instance
   #     after it launches

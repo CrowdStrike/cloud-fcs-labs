@@ -1,47 +1,28 @@
 ---
 AWSTemplateFormatVersion: '2010-09-09'
-Description: 'Entry Stack for the Dev.Days CNAP Workshop.  Creates an EKS cluster in a VPC with a loadbalancer-controller and a CodeBuild pipelines to buid
-              a container image and push to ECR whilst integrating with the CrowdStrike image scanning engine.'
+Description: 'Main template for base infrastructure stack supporting the Falcon Cloud Security Lab.  Creates an EKS cluster via eksctl and CodeBuild job, a Metasploit attacker instance, and other good stuff.'
 
 Parameters:
-  # Falcon Keys
-  # FalconCID:
-  #   NoEcho: true
-  #   Description: 'Customer CID for the Falcon Installation'
-  #   Type: String
-  # CrowdStrikeCloud:
-  #   Type: String
-  #   AllowedValues: ['us-1','us-2','eu-1']
-  #   Default: 'us-1'
-  # FalconClientID:
-  #   NoEcho: true
-  #   Description: 'Client ID for the Falcon API'
-  #   Type: String
-  # FalconClientSecret:
-  #   NoEcho: true
-  #   Description: 'Client Secret for the Falcon API'
-  #   Type: String
 
   EnvAlias:
     Type: String
     Default: 'fcs-lab'
-  EnvHash:
-    Type: String
-    Default: '' 
+  SSM-EnvHash:
+    Type: AWS::SSM::Parameter::Value<String>
   # AWS Account Dependencies
-  S3Bucket:
+  SSM-S3Bucket:
+    Type: AWS::SSM::Parameter::Value<String>
+  EnvHashInput:
     Type: String
-    Default: ''
+    Description: "Leave blank to use existing SSM Parameter 'SSM-EnvHash'. Otherwise, a 5-character alphanumeric value is required."
+  S3BucketInput:
+    Type: String
+    Description: "Leave blank to use existing SSM Parameter 'SSM-S3Bucket'. Otherwise, use your S3Bucket name that already contains FCSLab template files cloned from GitHub."
   S3Prefix:
     Type: String
     Default: 'deployInfra'
-  # PermissionsBoundary:
-  #   Type: String
-  #   Default: 'BoundaryForAdministratorAccess'
-  # KeyPairName:
-  #   Type: String
-  #   Default: ''
-  # Shared K8S Attributes
+
+ # Shared K8S Attributes
   KubernetesVersion:
     Type: String
     AllowedValues: [ "1.25", "1.26", "1.27", "1.28", "1.29" ]
@@ -49,82 +30,82 @@ Parameters:
     Description: Kubernetes control plane version.
   EKSClusterName:
     Type: String
-    Default: 'fcs-lab-EKS-cluster'
-  # # Optional
+    Default: "fcs-lab-EKS-cluster"
+
+ # Optional
   # RemoteAccessCIDR:
   #   Type: String
   #   Default: 1.1.1.1/32
-
+  # PermissionsBoundary:
+  #   Type: String
+  #   Default: 'BoundaryForAdministratorAccess'
+  # KeyPairName:
+  #   Type: String
+  #   Default: ''
+  
 Conditions:
-  SetEnvHashParameter: !Not 
-    - !Equals
-      - !Ref EnvHash
-      - ''
-  SetS3BucketParameter: !Not
-    - !Equals
-      - !Ref S3Bucket
-      - ''
+  SetEnvHashParameter: 
+    !Not [!Equals [!Ref EnvHashInput, '']]
+  SetS3BucketParameter: 
+    !Not [!Equals [!Ref S3BucketInput, '']]
 
 Resources:
 
+  InfraStackParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: Overwrite SSM-InfraStack parameter with current
+      Name: "SSM-InfraStack"
+      Type: String
+      Value: !Ref "AWS::StackName"
+
+  EnvHashParameter:
+    Type: AWS::SSM::Parameter
+    Condition: SetEnvHashParameter
+    Properties:
+      Description: Overwrite SSM-EnvHash parameter with current
+      Name: "SSM-InfraStack"
+      Type: String
+      Value: !If [SetEnvHashParameter, !Ref EnvHashInput, !Ref SSM-EnvHash]
+  
   S3BucketParameter:
     Type: AWS::SSM::Parameter
     Condition: SetS3BucketParameter
     Properties:
-      Description: S3Bucket parameter for related stacks
-      Name: "FCSLab-S3Bucket"
+      Description: Overwrite SSM-S3Bucket parameter with current
+      Name: "SSM-InfraStack"
       Type: String
-      Value: !Ref S3Bucket
-
-  ParameterStack:
-    Type: AWS::CloudFormation::Stack
-    Properties:
-      TemplateURL: !Sub 'https://{{resolve:ssm:FCSLab-S3Bucket}}.s3.amazonaws.com/${S3Prefix}/setStackParameters.yaml'
-      Parameters:
-        EnvHash: 
-          - !If [SetEnvHashParameter, !Ref EnvHash, '{{resolve:ssm:FCSLab-EnvHash}}']
-        SetEnvHashParameter: 
-          - !If
-            - SetEnvHashParameter 
-            - "true"
-            - "false"
-        S3Bucket: 
-          - !If [SetS3BucketParameter, !Ref S3Bucket, '{{resolve:ssm:FCSLab-S3Bucket}}']
-        SetS3BucketParameter: 
-          - !If
-            - SetS3BucketParameter
-            - "true"
-            - "false"
-
+      Value: !If [SetS3BucketParameter, !Ref S3BucketInput, !Ref SSM-S3Bucket]
+      
   IAMStack:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: !Sub 'https://${ParameterStack.Outputs.S3Bucket}.s3.amazonaws.com/${S3Prefix}/iam.yaml'
+      TemplateURL: !If [SetS3BucketParameter, !Sub 'https://${S3BucketInput}.s3.amazonaws.com/${S3Prefix}/iam.yaml', !Sub 'https://${SSM-S3Bucket}.s3.amazonaws.com/${S3Prefix}/iam.yaml']
       Parameters:
         EnvAlias: !Ref EnvAlias
-        EnvHash: !GetAtt ParameterStack.Outputs.EnvHash
-        S3Bucket: !GetAtt ParameterStack.Outputs.S3Bucket
+        EnvHash: !If [SetEnvHashParameter, !Ref EnvHashInput, !Ref SSM-EnvHash]
+        S3Bucket: !If [SetS3BucketParameter, !Ref S3BucketInput, !Ref SSM-S3Bucket]
         # PermissionsBoundary: !Ref PermissionsBoundary
 
   VPCStack:
     Type: AWS::CloudFormation::Stack
     DependsOn: IAMStack
     Properties:
-      TemplateURL: !Sub 'https://${ParameterStack.Outputs.S3Bucket}.s3.amazonaws.com/${S3Prefix}/vpc.yaml'
+      TemplateURL: !If [SetS3BucketParameter, !Sub 'https://${S3BucketInput}.s3.amazonaws.com/${S3Prefix}/vpc.yaml', !Sub 'https://${SSM-S3Bucket}.s3.amazonaws.com/${S3Prefix}/vpc.yaml']
       Parameters:
         EnvAlias: !Ref EnvAlias
-        EnvHash: !GetAtt ParameterStack.Outputs.EnvHash
-        S3Bucket: !GetAtt ParameterStack.Outputs.S3Bucket
+        EnvHash: !If [SetEnvHashParameter, !Ref EnvHashInput, !Ref SSM-EnvHash]
+        S3Bucket: !If [SetS3BucketParameter, !Ref S3BucketInput, !Ref SSM-S3Bucket]
         # PermissionsBoundary: !Ref PermissionsBoundary
 
   EKSCodeBuildStack:
       Type: AWS::CloudFormation::Stack
       DependsOn: IAMStack
       Properties:
-        TemplateURL:  !Sub 'https://${ParameterStack.Outputs.S3Bucket}.s3.amazonaws.com/${S3Prefix}/eksCodeBuild.yaml'
+        TemplateURL: !If [SetS3BucketParameter, !Sub 'https://${S3BucketInput}.s3.amazonaws.com/${S3Prefix}/eksCodeBuild.yaml', !Sub 'https://${SSM-S3Bucket}.s3.amazonaws.com/${S3Prefix}/eksCodeBuild.yaml']
         Parameters:
           EnvAlias: !Ref EnvAlias
-          EnvHash: !GetAtt ParameterStack.Outputs.EnvHash
+          EnvHash: !If [SetEnvHashParameter, !Ref EnvHashInput, !Ref SSM-EnvHash]
           EKSClusterName: !Ref EKSClusterName
           KubernetesVersion: !Ref KubernetesVersion
           SubnetPrivate1: !GetAtt VPCStack.Outputs.SubnetPrivate1
@@ -141,13 +122,13 @@ Resources:
     Type: AWS::CloudFormation::Stack
     DependsOn: EKSCodeBuildStack
     Properties:
-      TemplateURL: !Sub 'https://${ParameterStack.Outputs.S3Bucket}.s3.amazonaws.com/${S3Prefix}/bastion.yaml'
+      TemplateURL: !If [SetS3BucketParameter, !Sub 'https://${S3BucketInput}.s3.amazonaws.com/${S3Prefix}/bastion.yaml', !Sub 'https://${SSM-S3Bucket}.s3.amazonaws.com/${S3Prefix}/bastion.yaml']
       Parameters:
         EnvAlias: !Ref EnvAlias
-        EnvHash:  !GetAtt ParameterStack.Outputs.EnvHash
-        VPCID: !GetAtt VPCStack.Outputs.VpcId
-        S3Bucket: !GetAtt ParameterStack.Outputs.S3Bucket
+        EnvHash: !If [SetEnvHashParameter, !Ref EnvHashInput, !Ref SSM-EnvHash]
+        S3Bucket: !If [SetS3BucketParameter, !Ref S3BucketInput, !Ref SSM-S3Bucket]
         S3Prefix: !Ref S3Prefix
+        VPCID: !GetAtt VPCStack.Outputs.VpcId
         PublicSubnet1ID: !GetAtt VPCStack.Outputs.SubnetPublic1
         FCSInstanceProfile: !GetAtt IAMStack.Outputs.FCSInstanceProfile
         # KeyPairName: !Ref KeyPairName
@@ -159,11 +140,11 @@ Resources:
   MetasploitStack:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: !Sub 'https://${ParameterStack.Outputs.S3Bucket}.s3.amazonaws.com/${S3Prefix}/metasploit.yaml'
+      TemplateURL: !If [SetS3BucketParameter, !Sub 'https://${S3BucketInput}.s3.amazonaws.com/${S3Prefix}/metasploit.yaml', !Sub 'https://${SSM-S3Bucket}.s3.amazonaws.com/${S3Prefix}/metasploit.yaml']
       Parameters:
         EnvAlias: !Ref EnvAlias
-        EnvHash:  !GetAtt ParameterStack.Outputs.EnvHash
-        S3Bucket: !GetAtt ParameterStack.Outputs.S3Bucket
+        EnvHash: !If [SetEnvHashParameter, !Ref EnvHashInput, !Ref SSM-EnvHash]
+        S3Bucket: !If [SetS3BucketParameter, !Ref S3BucketInput, !Ref SSM-S3Bucket]
         S3Prefix: !Ref S3Prefix
         VPCCIDR: !GetAtt VPCStack.Outputs.VpcCIDROut
         PublicSubnetCIDR: !GetAtt VPCStack.Outputs.PublicSubnet1CIDROut
@@ -175,16 +156,16 @@ Resources:
   ConfidentialBucket:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: !Sub 'https://${ParameterStack.Outputs.S3Bucket}.s3.amazonaws.com/${S3Prefix}/vulBucket.yaml'
+      TemplateURL: !If [SetS3BucketParameter, !Sub 'https://${S3BucketInput}.s3.amazonaws.com/${S3Prefix}/vulBucket.yaml', !Sub 'https://${SSM-S3Bucket}.s3.amazonaws.com/${S3Prefix}/vulBucket.yaml']
       Parameters:
         EnvAlias: !Ref EnvAlias
-        EnvHash:  !GetAtt ParameterStack.Outputs.EnvHash
-        TemplateBucket: !GetAtt ParameterStack.Outputs.S3Bucket
+        EnvHash: !If [SetEnvHashParameter, !Ref EnvHashInput, !Ref SSM-EnvHash]
+        S3Bucket: !If [SetS3BucketParameter, !Ref S3BucketInput, !Ref SSM-S3Bucket]
         S3Prefix: !Ref S3Prefix
         # PermissionsBoundary: !Ref PermissionsBoundary
 
   SSMConfig:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: !Sub 'https://${ParameterStack.Outputs.S3Bucket}.s3.amazonaws.com/${S3Prefix}/SSMConf.yaml'
+      TemplateURL: !If [SetS3BucketParameter, !Sub 'https://${S3BucketInput}.s3.amazonaws.com/${S3Prefix}/SSMConf.yaml', !Sub 'https://${SSM-S3Bucket}.s3.amazonaws.com/${S3Prefix}/SSMConf.yaml']
  
