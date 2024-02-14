@@ -14,9 +14,8 @@ EnvHash=$(LC_ALL=C tr -dc a-z0-9 </dev/urandom | head -c 5)
 S3Bucket="fcslab-templates-${EnvHash}"
 StackName="fcslab-infrastack-${EnvHash}"
 
-aws ssm put-parameter --name=psEnvHash --value="${EnvHash}" --type=String --overwrite --region=$AWS_REGION --allowed-pattern "^[a-zA-Z0-9]{5}$"
-aws ssm put-parameter --name=psS3Bucket --value="${S3Bucket}" --region=$AWS_REGION --overwrite 
-aws ssm put-parameter --name=psInfraStack --value="${StackName}" --region=$AWS_REGION --type=String --overwrite
+aws ssm put-parameter --name=psEnvHash --value="${EnvHash}" --region=$AWS_REGION --allowed-pattern "^[a-zA-Z0-9]{5}$" --type=String --overwrite
+aws ssm put-parameter --name=psS3Bucket --value="${S3Bucket}" --region=$AWS_REGION --type=String --overwrite 
 
 S3Prefix='deployInfra'
 TemplateName='deployInfra.yaml'
@@ -28,7 +27,7 @@ TemplateName='deployInfra.yaml'
    aws s3api create-bucket --bucket $S3Bucket --region $AWS_REGION
    echo
    echo "Copying FCS-lab files to $S3Bucket"   
-   aws s3 cp ../ s3://${S3Bucket}/ --recursive 
+   aws s3 cp ../ s3://${S3Bucket}/ --recursive --exclude ".git/*" --exclude ".DS_Store" --exclude ".gitignore" 
    echo
    echo "Building AWS lab environment...$NC"
 

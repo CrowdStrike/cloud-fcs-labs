@@ -1,0 +1,36 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'Set stack parameters to join or recreate base stacks'
+
+Parameters:
+  EnvHash:
+    Type: String
+    Default: '' 
+  S3Bucket:
+    Type: String
+    Default: ''
+
+Resources:
+  EnvHashParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: Set adhoc EnvHash parameter -- 5-digit alphanueric string
+      Name: "psEnvHash"
+      Type: String
+      AllowedPattern: "^[a-zA-Z0-9]{5}$"
+      Value: !Ref EnvHashInput
+  
+  S3BucketParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: Set S3Bucket name where FCS-Lab templates are located. (Typically from a previous git clone or workshop).
+      Name: "psS3Bucket"
+      Type: String
+      Value: !Ref S3BucketInput
+
+Outputs:
+  EnvHash:
+    Value: !Ref EnvHash
+
+  S3Bucket:
+    Value: !Ref S3Bucket
+

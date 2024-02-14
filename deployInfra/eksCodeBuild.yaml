@@ -74,7 +74,8 @@ Resources:
       Environment:
         Type: LINUX_CONTAINER
         ComputeType: BUILD_GENERAL1_SMALL
-        Image: aws/codebuild/amazonlinux2-x86_64-standard:1.0
+        # Image: aws/codebuild/amazonlinux2-x86_64-standard:1.0
+        Image: aws/codebuild/amazonlinux2023-x86_64-standard:5.0
         EnvironmentVariables:
           - Name: CFN_RESPONSE_URL
             Value: !Ref WaitForStackCreationHandle
@@ -89,9 +90,9 @@ Resources:
             phases:
               install:
                 runtime-versions:
-                  python: 3.7
+                  python: 3.12
                 commands:
-                  - echo ">>> installed python 3.7"
+                  - echo ">>> installed python 3.12"
               pre_build:
                 commands:
                   - echo ">>> build cluster configs"
@@ -228,7 +229,7 @@ Resources:
       Description: function to retrieve User info
       Handler: index.handler
       Role: !GetAtt TriggerBuildLambdaIamRole.Arn
-      Runtime: python3.7
+      Runtime: python3.12
       Code:
         ZipFile: |
           import boto3
