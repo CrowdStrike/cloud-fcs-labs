@@ -72,22 +72,6 @@ Resources:
         ToPort: 65535
         CidrIp: 10.0.0.0/16
   
-  # BastionToAPIServerAccess:
-  #   Type: "AWS::EC2::SecurityGroupIngress"
-  #   Properties:
-  #     Description: Allow Bastion server to communicate with the cluster API Server
-  #     # GroupId: !Ref ControlPlaneSecurityGroupId
-  #     SourceSecurityGroupId: !Ref BastionSG
-  #     IpProtocol: tcp
-  #     ToPort: 443
-  #     FromPort: 443
-  
-  # BastionHostProfile:
-  #   Type: AWS::IAM::InstanceProfile
-  #   Properties:
-  #     Roles:
-  #       - !Ref BastionRole
-
   BastionHost:
     Type: AWS::EC2::Instance
     Properties:
