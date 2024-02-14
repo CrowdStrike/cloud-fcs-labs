@@ -52,7 +52,7 @@ Parameters:
 Conditions:
   UseEnvHashInput: 
     !Not [!Equals [!Ref EnvHashInput, '']]
-  UseS3BucketInut: 
+  UseS3BucketInput: 
     !Not [!Equals [!Ref S3BucketInput, '']]
 
 Resources:
@@ -61,39 +61,39 @@ Resources:
     Type: AWS::SSM::Parameter
     Properties:
       Description: Overwrite psInfraStack parameter with current
-      Name: !If [SetEnvHashParameter, !Sub 'psInfraStack-${EnvHashInput}', !Sub 'psInfraStack-${psEnvHash}']
+      Name: !If [UseEnvHashInput, !Sub 'psInfraStack-${EnvHashInput}', !Sub 'psInfraStack-${psEnvHash}']
       Type: String
       Value: !Ref "AWS::StackName"
       
   IAMStack:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: !If [SetS3BucketParameter, !Sub 'https://${S3BucketInput}.s3.amazonaws.com/${S3Prefix}/iam.yaml', !Sub 'https://${psS3Bucket}.s3.amazonaws.com/${S3Prefix}/iam.yaml']
+      TemplateURL: !If [UseS3BucketInput, !Sub 'https://${S3BucketInput}.s3.amazonaws.com/${S3Prefix}/iam.yaml', !Sub 'https://${psS3Bucket}.s3.amazonaws.com/${S3Prefix}/iam.yaml']
       Parameters:
         EnvAlias: !Ref EnvAlias
-        EnvHash: !If [SetEnvHashParameter, !Ref EnvHashInput, !Ref psEnvHash]
-        S3Bucket: !If [SetS3BucketParameter, !Ref S3BucketInput, !Ref psS3Bucket]
+        EnvHash: !If [UseEnvHashInput, !Ref EnvHashInput, !Ref psEnvHash]
+        S3Bucket: !If [UseS3BucketInput, !Ref S3BucketInput, !Ref psS3Bucket]
         # PermissionsBoundary: !Ref PermissionsBoundary
 
   VPCStack:
     Type: AWS::CloudFormation::Stack
     DependsOn: IAMStack
     Properties:
-      TemplateURL: !If [SetS3BucketParameter, !Sub 'https://${S3BucketInput}.s3.amazonaws.com/${S3Prefix}/vpc.yaml', !Sub 'https://${psS3Bucket}.s3.amazonaws.com/${S3Prefix}/vpc.yaml']
+      TemplateURL: !If [UseS3BucketInput, !Sub 'https://${S3BucketInput}.s3.amazonaws.com/${S3Prefix}/vpc.yaml', !Sub 'https://${psS3Bucket}.s3.amazonaws.com/${S3Prefix}/vpc.yaml']
       Parameters:
         EnvAlias: !Ref EnvAlias
-        EnvHash: !If [SetEnvHashParameter, !Ref EnvHashInput, !Ref psEnvHash]
-        S3Bucket: !If [SetS3BucketParameter, !Ref S3BucketInput, !Ref psS3Bucket]
+        EnvHash: !If [UseEnvHashInput, !Ref EnvHashInput, !Ref psEnvHash]
+        S3Bucket: !If [UseS3BucketInput, !Ref S3BucketInput, !Ref psS3Bucket]
         # PermissionsBoundary: !Ref PermissionsBoundary
 
   EKSCodeBuildStack:
       Type: AWS::CloudFormation::Stack
       DependsOn: IAMStack
       Properties:
-        TemplateURL: !If [SetS3BucketParameter, !Sub 'https://${S3BucketInput}.s3.amazonaws.com/${S3Prefix}/eksCodeBuild.yaml', !Sub 'https://${psS3Bucket}.s3.amazonaws.com/${S3Prefix}/eksCodeBuild.yaml']
+        TemplateURL: !If [UseS3BucketInput, !Sub 'https://${S3BucketInput}.s3.amazonaws.com/${S3Prefix}/eksCodeBuild.yaml', !Sub 'https://${psS3Bucket}.s3.amazonaws.com/${S3Prefix}/eksCodeBuild.yaml']
         Parameters:
           EnvAlias: !Ref EnvAlias
-          EnvHash: !If [SetEnvHashParameter, !Ref EnvHashInput, !Ref psEnvHash]
+          EnvHash: !If [UseEnvHashInput, !Ref EnvHashInput, !Ref psEnvHash]
           EKSClusterName: !Ref EKSClusterName
           KubernetesVersion: !Ref KubernetesVersion
           VpcId: !GetAtt VPCStack.Outputs.VpcId 
@@ -111,11 +111,11 @@ Resources:
     Type: AWS::CloudFormation::Stack
     DependsOn: EKSCodeBuildStack
     Properties:
-      TemplateURL: !If [SetS3BucketParameter, !Sub 'https://${S3BucketInput}.s3.amazonaws.com/${S3Prefix}/bastion.yaml', !Sub 'https://${psS3Bucket}.s3.amazonaws.com/${S3Prefix}/bastion.yaml']
+      TemplateURL: !If [UseS3BucketInput, !Sub 'https://${S3BucketInput}.s3.amazonaws.com/${S3Prefix}/bastion.yaml', !Sub 'https://${psS3Bucket}.s3.amazonaws.com/${S3Prefix}/bastion.yaml']
       Parameters:
         EnvAlias: !Ref EnvAlias
-        EnvHash: !If [SetEnvHashParameter, !Ref EnvHashInput, !Ref psEnvHash]
-        S3Bucket: !If [SetS3BucketParameter, !Ref S3BucketInput, !Ref psS3Bucket]
+        EnvHash: !If [UseEnvHashInput, !Ref EnvHashInput, !Ref psEnvHash]
+        S3Bucket: !If [UseS3BucketInput, !Ref S3BucketInput, !Ref psS3Bucket]
         S3Prefix: !Ref S3Prefix
         VPCID: !GetAtt VPCStack.Outputs.VpcId
         PublicSubnet1ID: !GetAtt VPCStack.Outputs.SubnetPublic1
@@ -129,11 +129,11 @@ Resources:
   MetasploitStack:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: !If [SetS3BucketParameter, !Sub 'https://${S3BucketInput}.s3.amazonaws.com/${S3Prefix}/metasploit.yaml', !Sub 'https://${psS3Bucket}.s3.amazonaws.com/${S3Prefix}/metasploit.yaml']
+      TemplateURL: !If [UseS3BucketInput, !Sub 'https://${S3BucketInput}.s3.amazonaws.com/${S3Prefix}/metasploit.yaml', !Sub 'https://${psS3Bucket}.s3.amazonaws.com/${S3Prefix}/metasploit.yaml']
       Parameters:
         EnvAlias: !Ref EnvAlias
-        EnvHash: !If [SetEnvHashParameter, !Ref EnvHashInput, !Ref psEnvHash]
-        S3Bucket: !If [SetS3BucketParameter, !Ref S3BucketInput, !Ref psS3Bucket]
+        EnvHash: !If [UseEnvHashInput, !Ref EnvHashInput, !Ref psEnvHash]
+        S3Bucket: !If [UseS3BucketInput, !Ref S3BucketInput, !Ref psS3Bucket]
         S3Prefix: !Ref S3Prefix
         VPCCIDR: !GetAtt VPCStack.Outputs.VpcCIDROut
         PublicSubnetCIDR: !GetAtt VPCStack.Outputs.PublicSubnet1CIDROut
@@ -145,16 +145,16 @@ Resources:
   ConfidentialBucket:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: !If [SetS3BucketParameter, !Sub 'https://${S3BucketInput}.s3.amazonaws.com/${S3Prefix}/vulBucket.yaml', !Sub 'https://${psS3Bucket}.s3.amazonaws.com/${S3Prefix}/vulBucket.yaml']
+      TemplateURL: !If [UseS3BucketInput, !Sub 'https://${S3BucketInput}.s3.amazonaws.com/${S3Prefix}/vulBucket.yaml', !Sub 'https://${psS3Bucket}.s3.amazonaws.com/${S3Prefix}/vulBucket.yaml']
       Parameters:
         EnvAlias: !Ref EnvAlias
-        EnvHash: !If [SetEnvHashParameter, !Ref EnvHashInput, !Ref psEnvHash]
-        S3Bucket: !If [SetS3BucketParameter, !Ref S3BucketInput, !Ref psS3Bucket]
+        EnvHash: !If [UseEnvHashInput, !Ref EnvHashInput, !Ref psEnvHash]
+        S3Bucket: !If [UseS3BucketInput, !Ref S3BucketInput, !Ref psS3Bucket]
         S3Prefix: !Ref S3Prefix
         # PermissionsBoundary: !Ref PermissionsBoundary
 
   SSMConfig:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: !If [SetS3BucketParameter, !Sub 'https://${S3BucketInput}.s3.amazonaws.com/${S3Prefix}/SSMConf.yaml', !Sub 'https://${psS3Bucket}.s3.amazonaws.com/${S3Prefix}/SSMConf.yaml']
+      TemplateURL: !If [UseS3BucketInput, !Sub 'https://${S3BucketInput}.s3.amazonaws.com/${S3Prefix}/SSMConf.yaml', !Sub 'https://${psS3Bucket}.s3.amazonaws.com/${S3Prefix}/SSMConf.yaml']
  
