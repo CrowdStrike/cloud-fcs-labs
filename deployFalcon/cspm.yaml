@@ -752,9 +752,9 @@ Resources:
 
           os.chdir('/tmp')
           requirements = open("requirements.txt", "x")
-          requirements = open("demofile2.txt", "a")
+          requirements = open("requirements.txt", "a")
           requirements.write("urllib3<2")
-          requirements = open("demofile2.txt", "a")
+          requirements = open("requirements.txt", "a")
           requirements.write("requests==2.31.0")
           # pip install falconpy package to /tmp/ and add to path
           subprocess.call('pip install crowdstrike-falconpy -r /tmp/requirements.txt -t /tmp/ --no-cache-dir'.split(), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
