@@ -86,6 +86,14 @@ Mappings:
       CSRoleName: "CrowdStrikeCSPMConnector"
 
 Resources:
+  TrailBucketParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: set codepipeline S3bucket parameter for stack deletion cleanup
+      Name: !Sub 'psTrailBucket-${EnvHash}'
+      Type: String
+      Value: !Ref TrailBucket  
+      
   StackSetAdministrationRole:
     Type: AWS::IAM::Role
     Condition: CreateIOAResources

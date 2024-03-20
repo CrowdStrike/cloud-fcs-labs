@@ -6,6 +6,9 @@ env_up(){
 AWS_REGION='us-east-1'
 S3Prefix='deployFalcon'
 TemplateName='deployFalcon.yaml'
+tmpEnvHash=$(aws ssm get-parameter --name psEnvHash --query 'Parameter.Value' --output text) 
+tmpS3Bucket=$(aws ssm get-parameter --name psS3Bucket --query 'Parameter.Value' --output text)
+StackName=fcslab-falconstack-${tmpEnvHash}
 
    echo 
    echo "Welcome to the Falcon Cloud Security Workshop - Falcon Sensor deployment and AWS account CSPM registration $NC"
@@ -37,28 +40,39 @@ TemplateName='deployFalcon.yaml'
    read -p "Register your AWS Account with Falcon CSPM [true]: " CSPMDeploy
    CSPMDeploy=${CSPMDeploy:=true}
    read -p "Generate cloud IoA and IoM sample detections [true]: " IOAIOMDeploy
-   IOAIOMDeploy=${IOAIOMDeploy:=true} 
+   IOAIOMDeploy=${IOAIOMDeploy:=true}                                                                                                                                                                                                       
 
-   tmpEnvHash=$(aws ssm get-parameter --name EnvHash --query 'Parameter.Value' --output text)                                                                                                                                                                                                                 
+cat <<EOF > tmpsecret.json
+{
+  "FalconClientId":"$CLIENT_ID", 
+  "FalconSecret":"$CLIENT_SECRET",
+  "FalconCID":"$CS_CID" ,
+  "CSCloud":"$CS_CLOUD" 
+}
+EOF
 
-   S3Bucket=fcs-stack-${tmpEnvHash}
-   StackName=fcs-falcon-stack-${tmpEnvHash}
+tmpFalconSecret=$(aws secretsmanager list-secrets --query 'SecretList[].Name[]' --output text | grep crowdstrike-falcon-api)
+if [[ "$tmpFalconSecret" == 'crowdstrike-falcon-api' ]] 
+then
+  aws secretsmanager put-secret-value --secret-id crowdstrike-falcon-api --secret-string file://tmpsecret.json
+else
+  aws secretsmanager create-secret --name crowdstrike-falcon-api
+  aws secretsmanager put-secret-value --secret-id crowdstrike-falcon-api --secret-string file://tmpsecret.json 
+fi
+
+rm tmpsecret.json
+
    echo
    echo "Deploying Falcon protection and demo resources to AWS lab environment...$NC"
-   aws cloudformation create-stack --stack-name $StackName --template-url https://${S3Bucket}.s3.amazonaws.com/${S3Prefix}/${TemplateName} --region $AWS_REGION --disable-rollback \
+   response=$(aws cloudformation create-stack --stack-name $StackName --template-url https://${tmpS3Bucket}.s3.amazonaws.com/${S3Prefix}/${TemplateName} --region $AWS_REGION --disable-rollback \
    --capabilities CAPABILITY_NAMED_IAM CAPABILITY_IAM CAPABILITY_AUTO_EXPAND \
    --parameters \
-   ParameterKey=S3Bucket,ParameterValue=${S3Bucket} \
-   ParameterKey=S3Prefix,ParameterValue=${S3Prefix} \
-   ParameterKey=EnvHash,ParameterValue=$tmpEnvHash \
-   ParameterKey=FalconClientID,ParameterValue=$CLIENT_ID \
-   ParameterKey=FalconClientSecret,ParameterValue=$CLIENT_SECRET \
-   ParameterKey=CrowdStrikeCloud,ParameterValue=$CS_CLOUD \
-   ParameterKey=FalconCID,ParameterValue=$CS_CID \
    ParameterKey=DeployCSPM,ParameterValue=$CSPMDeploy \
-   ParameterKey=DeployCSPMSampleDetections,ParameterValue=$IOAIOMDeploy
+   ParameterKey=DeployCSPMSampleDetections,ParameterValue=$IOAIOMDeploy)
 
-    echo "The Cloudformation stack will take 20-30 minutes to complete.$NC"
+echo $NC$response
+
+    echo "$NC The Cloudformation stack will take 20-30 minutes to complete."
     echo "\n\nCheck the status at any time with the command \n\naws cloudformation describe-stacks --stack-name $StackName --region $AWS_REGION$NC\n\n"
 }
 env_up

@@ -21,6 +21,14 @@ Parameters:
 # Conditions:
   # PermissionsBoundary: !Not [ !Equals [ !Ref PermissionsBoundary, '' ] ]
 Resources:
+  ConfidentialLoggingBucketParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: set logging S3bucket parameter for stack deletion cleanup
+      Name: !Sub 'psLoggingBucket-${EnvHash}'
+      Type: String
+      Value: !Ref ConfidentialLoggingBucket  
+      
   ConfidentialBucket:
     Type: 'AWS::S3::Bucket'
     Properties:

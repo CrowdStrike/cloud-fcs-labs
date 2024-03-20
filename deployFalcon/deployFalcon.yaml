@@ -3,24 +3,50 @@ AWSTemplateFormatVersion: '2010-09-09'
 Description: 'Entry Stack for the Dev.Days CNAP Workshop.  Creates an EKS cluster in a VPC with a loadbalancer-controller and a CodeBuild pipelines to buid
               a container image and push to ECR whilst integrating with the CrowdStrike image scanning engine.'
 
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: Falcon API Credentials
+        Parameters:
+          - FalconClientID
+          - FalconClientSecret
+          - FalconCID
+          - CrowdStrikeCloud
+      
+    ParameterLabels:
+      FalconClientID:
+        default: Falcon API Client ID
+      FalconClientSecret:
+        default: Falcon API Secret
+      FalconCID:
+        default: Falcon Customer ID (CID)
+      CrowdStrikeCloud:
+        default: CrowdStrike Cloud
+
 Parameters:
   # Falcon Keys
-  FalconCID:
-    NoEcho: true
-    Description: 'Customer CID for the Falcon Installation'
+  
+  FalconClientID:
+    Description: Your Falcon OAuth2 Client ID.
+    NoEcho: 'true'
     Type: String
+    Default: ""
+  FalconClientSecret:
+    Description: Your Falcon OAuth2 API Secret.
+    NoEcho: 'true'
+    Type: String
+    Default: ""
+  FalconCID:
+    Description: Falcon Customer ID
+    NoEcho: 'true'
+    Type: String
+    Default: ""
   CrowdStrikeCloud:
     Type: String
-    AllowedValues: ['us-1','us-2','eu-1']
-    Default: 'us-1'
-  FalconClientID:
-    NoEcho: true
-    Description: 'Client ID for the Falcon API'
-    Type: String
-  FalconClientSecret:
-    NoEcho: true
-    Description: 'Client Secret for the Falcon API'
-    Type: String
+    Default: ""
+    #AllowedValues: [ "us-1", "us-2", "eu-1" ]
+    Description: The cloud region where your Falcon CID is hosted (use either us-1, us-2, or eu-1)
   DeployCSPM:
     Description: registers AWS account with Falcon CloudSecurity Posture Management
     Type: String
@@ -40,19 +66,37 @@ Parameters:
   EnvAlias:
     Type: String
     Default: 'fcs-lab'
-  EnvHash:
-    Type: String
-    Default: ''
-  # AWS Account Dependencies
-  S3Bucket:
-    Type: String
-    Default: ''
+  # EnvHash:
+  #   Type: String
+  #   Default: ''
+  # # AWS Account Dependencies
+  # S3Bucket:
+  #   Type: String
+  #   Default: ''
   S3Prefix:
     Type: String
     Default: 'deployFalcon'
+  psEnvHash:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: psEnvHash
+    Description: 'Used when launching from startDeployInfra.sh or after creating setStackParameters.yaml stack'
+  # AWS Account Dependencies
+  psS3Bucket:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: psS3Bucket
+    Description: 'Used when launching from startDeployInfra.sh or after creating setStackParameters.yaml stack'
+  EnvHashInput:
+    Type: String
+    Default: ""
+    Description: "Leave blank to use existing SSM Parameter 'psEnvHash'. Otherwise, a 5-character alphanumeric value is required."
+  S3BucketInput:
+    Type: String
+    Default: ""
+    Description: "Leave blank to use existing SSM Parameter 'psS3Bucket'. Otherwise, use your S3Bucket name that already contains FCSLab template files cloned from GitHub."
+
   EKSClusterName:
     Type: String
-    Default: 'fcs-lab-EKS-cluster'
+    Default: 'fcs-lab-EKS'
 
   # PermissionsBoundary:
   #   Type: String
@@ -76,21 +120,45 @@ Conditions:
   DeploySampleIOAsIOMs: !Equals
     - !Ref DeployCSPMSampleDetections
     - true
-
+  UseEnvHashInput: 
+    !Not [!Equals [!Ref EnvHashInput, '']]
+  UseS3BucketInput: 
+    !Not [!Equals [!Ref S3BucketInput, '']]
+  UseInputSecret:
+    !Not [!Equals [!Ref FalconClientID, '']]
+ 
 Resources:
+  FalconStackParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: set psFalconStack parameter for stack deletion cleanup
+      Name: !If [UseEnvHashInput, !Sub 'psFalconStack-${EnvHashInput}', !Sub 'psFalconStack-${psEnvHash}']
+      Type: String
+      Value: !Ref "AWS::StackName"
 
+  FalconStackParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: set psFalconStack parameter for stack deletion cleanup
+      Name: !If [UseEnvHashInput, !Sub 'psFalconStack-${EnvHashInput}', !Sub 'psFalconStack-${psEnvHash}']
+      Type: String
+      Value: !Ref "AWS::StackName"
+  
   CodePipelineStack:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: !Sub 'https://${S3Bucket}.s3.amazonaws.com/${S3Prefix}/codePipeline.yaml'
+      # TemplateURL: !Sub 'https://${S3Bucket}.s3.amazonaws.com/${S3Prefix}/codePipeline.yaml'
+      TemplateURL: !If [UseS3BucketInput, !Sub 'https://${S3BucketInput}.s3.amazonaws.com/${S3Prefix}/codePipeline.yaml', !Sub 'https://${psS3Bucket}.s3.amazonaws.com/${S3Prefix}/codePipeline.yaml']
       Parameters:
         EnvAlias: !Ref EnvAlias
-        EnvHash: !Ref EnvHash
-        FalconClientID: !Ref FalconClientID
-        FalconClientSecret: !Ref FalconClientSecret
-        FalconCID: !Ref FalconCID
-        CrowdStrikeCloud: !Ref CrowdStrikeCloud
-        S3CodeBucketName: !Ref S3Bucket
+        # EnvHash: !Ref EnvHash
+        EnvHash: !If [UseEnvHashInput, !Ref EnvHashInput, !Ref psEnvHash]
+        S3CodeBucketName: !If [UseS3BucketInput, !Ref S3BucketInput, !Ref psS3Bucket]
+        FalconClientID: !If [UseInputSecret, !Ref FalconClientID, "{{resolve:secretsmanager:crowdstrike-falcon-api:SecretString:FalconClientId}}"]
+        FalconClientSecret: !If [UseInputSecret, !Ref FalconClientSecret, "{{resolve:secretsmanager:crowdstrike-falcon-api:SecretString:FalconSecret}}"]
+        FalconCID: !If [UseInputSecret, !Ref FalconCID, "{{resolve:secretsmanager:crowdstrike-falcon-api:SecretString:FalconCID}}"]
+        CrowdStrikeCloud: !If [UseInputSecret, !Ref CrowdStrikeCloud, "{{resolve:secretsmanager:crowdstrike-falcon-api:SecretString:CSCloud}}"]
+        # S3CodeBucketName: !Ref S3Bucket
         S3Prefix: !Ref S3Prefix
         S3CodeBucketKey: code.zip
         EKSCodeBuildServiceRoleArn: !Sub arn:aws:iam::${AWS::AccountId}:role/fcsworkshop-admin 
@@ -104,12 +172,14 @@ Resources:
     Type: AWS::CloudFormation::Stack
     Condition: DeployCSPMStack
     Properties:
-      TemplateURL: !Sub 'https://${S3Bucket}.s3.amazonaws.com/${S3Prefix}/cspm.yaml'
+      # TemplateURL: !Sub 'https://${S3Bucket}.s3.amazonaws.com/${S3Prefix}/cspm.yaml'
+      TemplateURL: !If [UseS3BucketInput, !Sub 'https://${S3BucketInput}.s3.amazonaws.com/${S3Prefix}/cspm.yaml', !Sub 'https://${psS3Bucket}.s3.amazonaws.com/${S3Prefix}/cspm.yaml']
       Parameters:
-        EnvHash:  !Ref EnvHash
-        CSCloud: !Ref CrowdStrikeCloud
-        FalconClientID: !Ref FalconClientID
-        FalconSecret: !Ref FalconClientSecret
+        # EnvHash:  !Ref EnvHash
+        EnvHash: !If [UseEnvHashInput, !Ref EnvHashInput, !Ref psEnvHash]
+        FalconClientID: !If [UseInputSecret, !Ref FalconClientID, "{{resolve:secretsmanager:crowdstrike-falcon-api:SecretString:FalconClientId}}"]
+        FalconSecret: !If [UseInputSecret, !Ref FalconClientSecret, "{{resolve:secretsmanager:crowdstrike-falcon-api:SecretString:FalconSecret}}"]
+        CSCloud: !If [UseInputSecret, !Ref CrowdStrikeCloud, "{{resolve:secretsmanager:crowdstrike-falcon-api:SecretString:CSCloud}}"]
         # PermissionsBoundary: !Ref PermissionsBoundary
         # EnvAlias: !Ref EnvAlias
         # KeyPairName: !Ref KeyPairName
@@ -117,13 +187,15 @@ Resources:
   WAFRules:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: !Sub 'https://${S3Bucket}.s3.amazonaws.com/${S3Prefix}/wafACL.yaml'
+      # TemplateURL: !Sub 'https://${S3Bucket}.s3.amazonaws.com/${S3Prefix}/wafACL.yaml'
+      TemplateURL: !If [UseS3BucketInput, !Sub 'https://${S3BucketInput}.s3.amazonaws.com/${S3Prefix}/wafACL.yaml', !Sub 'https://${psS3Bucket}.s3.amazonaws.com/${S3Prefix}/wafACL.yaml']
 
   IOAIOMSetup:
     Type: AWS::CloudFormation::Stack
     Condition: DeploySampleIOAsIOMs
     Properties:
-      TemplateURL: !Sub 'https://${S3Bucket}.s3.amazonaws.com/${S3Prefix}/ioa-iom.yaml'
+      # TemplateURL: !Sub 'https://${S3Bucket}.s3.amazonaws.com/${S3Prefix}/ioa-iom.yaml'
+      TemplateURL: !If [UseS3BucketInput, !Sub 'https://${S3BucketInput}.s3.amazonaws.com/${S3Prefix}/ioa-iom.yaml', !Sub 'https://${psS3Bucket}.s3.amazonaws.com/${S3Prefix}/ioa-iom.yaml']
       # Parameters:
         # KeyPairName: !Ref KeyPairName
         # PermissionsBoundary: !Ref PermissionsBoundary

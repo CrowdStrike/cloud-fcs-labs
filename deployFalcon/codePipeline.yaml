@@ -123,6 +123,14 @@ Resources:
           "cid": "${FalconCID}",
           "cs_cloud":"${CrowdStrikeCloud}"
         }
+  CodePipelineBucketParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: set codepipeline S3bucket parameter for stack deletion cleanup
+      Name: !Sub 'psCodePipelineBucket-${EnvHash}'
+      Type: String
+      Value: !Ref CodePipelineArtifactStoreBucket  
+
 
   ################################
   #                              #

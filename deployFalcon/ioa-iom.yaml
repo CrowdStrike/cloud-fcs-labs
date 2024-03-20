@@ -50,7 +50,7 @@ Resources:
     Type: AWS::Lambda::Function
     Properties:
       FunctionName: "cs-cloud-demo-public-lambda"
-      Runtime: nodejs14.x
+      Runtime: nodejs20.x
       Role: !GetAtt "publicLambdaRole.Arn"
       Handler: index.handler
       Code:
@@ -90,7 +90,7 @@ Resources:
     Type: AWS::Lambda::Function
     Properties:
       FunctionName: "cs-cloud-demo-permissive-lambda"
-      Runtime: nodejs14.x
+      Runtime: nodejs20.x
       Role: !GetAtt "permissiveLambdaRole.Arn"
       Handler: index.handler
       Code:

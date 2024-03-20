@@ -36,7 +36,7 @@ Parameters:
     Description: Kubernetes control plane version.
   EKSClusterName:
     Type: String
-    Default: "fcs-lab-EKS-cluster"
+    Default: "fcs-lab-EKS"
 
  # Optional
   # RemoteAccessCIDR:
@@ -60,7 +60,7 @@ Resources:
   InfraStackParameter:
     Type: AWS::SSM::Parameter
     Properties:
-      Description: Overwrite psInfraStack parameter with current
+      Description: set psInfraStack parameter for stack deletion cleanup
       Name: !If [UseEnvHashInput, !Sub 'psInfraStack-${EnvHashInput}', !Sub 'psInfraStack-${psEnvHash}']
       Type: String
       Value: !Ref "AWS::StackName"
@@ -103,9 +103,6 @@ Resources:
           SubnetPublic2: !GetAtt VPCStack.Outputs.SubnetPublic2
           FCSRole: !GetAtt IAMStack.Outputs.FCSRole
           # PermissionsBoundary: !Ref PermissionsBoundary
-          # EKSCodeBuildServiceRoleArn: !GetAtt IAMStack.Outputs.EKSCodeBuildServiceRoleArn
-          # EKSQSExtentionRoleArn: !GetAtt IAMStack.Outputs.EKSQSExtentionRoleArn
-          # BastionRole: !GetAtt IAMStack.Outputs.BastionHostRole
 
   BastionStack:
     Type: AWS::CloudFormation::Stack
@@ -122,9 +119,6 @@ Resources:
         FCSInstanceProfile: !GetAtt IAMStack.Outputs.FCSInstanceProfile
         # KeyPairName: !Ref KeyPairName
         # RemoteAccessCIDR: !Ref RemoteAccessCIDR
-        # BastionRole: !GetAtt IAMStack.Outputs.BastionHostRole
-        # ControlPlaneSecurityGroupId: !GetAtt EKSControlPlaneStack.Outputs.ControlPlaneSecurityGroupId
-        # EnvironmentVariables: !Sub "CS_CID=${FalconCID}, DOCKER_API_TOKEN=${DockerAPIToken}, CS_ENV=${CrowdStrikeCloud}, CS_CLIENT_ID=${FalconClientID}, CS_CLIENT_SECRET=${FalconClientSecret}, K8S_CLUSTER_NAME=${EKSControlPlaneStack.Outputs.UniqueClusterName}, K8S_CA_DATA=${EKSControlPlaneStack.Outputs.CAData}, K8S_VERSION=${KubernetesVersion}, K8S_ENDPOINT=${EKSControlPlaneStack.Outputs.EKSEndpoint}"
 
   MetasploitStack:
     Type: AWS::CloudFormation::Stack

@@ -20,27 +20,26 @@ aws ssm put-parameter --name=psS3Bucket --value="${S3Bucket}" --region=$AWS_REGI
 S3Prefix='deployInfra'
 TemplateName='deployInfra.yaml'
 
-   echo 
-   echo "Welcome to the Falcon Cloud Security Workshop - AWS Infrastructure deployment stacks$NC"
-   echo 
-   echo "Creating S3 bucket..."
-   aws s3api create-bucket --bucket $S3Bucket --region $AWS_REGION
-   echo
-   echo "Copying FCS-lab files to $S3Bucket"   
-   aws s3 cp ../ s3://${S3Bucket}/ --recursive --exclude ".git/*" --exclude ".DS_Store" --exclude ".gitignore" 
-   echo
-   echo "Building AWS lab environment...$NC"
+echo "Welcome to the Falcon Cloud Security Workshop - AWS Infrastructure deployment stacks$NC"
+echo 
+echo "Creating S3 bucket for FCS-lab templates and code..."
+aws s3api create-bucket --bucket $S3Bucket --region $AWS_REGION
+echo
+echo "Copying FCS-lab files to $S3Bucket"   
+aws s3 cp ../ s3://${S3Bucket}/ --recursive --exclude ".git/*" --exclude ".DS_Store" --exclude ".gitignore" 
+echo
+echo "Building AWS lab environment...$NC"
 
-   aws cloudformation create-stack --stack-name $StackName --template-url https://${S3Bucket}.s3.amazonaws.com/${S3Prefix}/${TemplateName} --region $AWS_REGION --disable-rollback \
-   --capabilities CAPABILITY_NAMED_IAM CAPABILITY_IAM CAPABILITY_AUTO_EXPAND #\
-#    --parameters \
-#    ParameterKey=S3Bucket,ParameterValue=${S3Bucket} \
-#    ParameterKey=S3Prefix,ParameterValue=${S3Prefix} \
-#    ParameterKey=EnvHash,ParameterValue=${EnvHash} \
-#    ParameterKey=SetParams,Parameteralue=${SetParams}
+response=$(aws cloudformation create-stack --stack-name $StackName --template-url https://${S3Bucket}.s3.amazonaws.com/${S3Prefix}/${TemplateName} --region $AWS_REGION --disable-rollback \
+--capabilities CAPABILITY_NAMED_IAM CAPABILITY_IAM CAPABILITY_AUTO_EXPAND) 
 
-    echo "The Cloudformation stack will take 20-30 minutes to complete.$NC"
-    echo "\n\nCheck the status at any time with the command \n\naws cloudformation describe-stacks --stack-name $StackName --region $AWS_REGION$NC\n\n"
-
+echo "$NCresponse code=$response" 
+# if $response=1; do
+echo "The Cloudformation stack will take 20-30 minutes to complete.$NC"
+echo "\n\nCheck the status at any time with the command \n\naws cloudformation describe-stacks --stack-name $StackName --region $AWS_REGION$NC\n\n"
+# else
+# echo "Stack creation failed. Check CloudFormation logs for details, or try:"
+# echo "cloudformation describe-stacks --stack-name $StackName --region $AWS_REGION}"
+# fi
 }
 env_up
