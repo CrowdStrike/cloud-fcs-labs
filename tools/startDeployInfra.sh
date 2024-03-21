@@ -33,13 +33,15 @@ echo "Building AWS lab environment...$NC"
 response=$(aws cloudformation create-stack --stack-name $StackName --template-url https://${S3Bucket}.s3.amazonaws.com/${S3Prefix}/${TemplateName} --region $AWS_REGION --disable-rollback \
 --capabilities CAPABILITY_NAMED_IAM CAPABILITY_IAM CAPABILITY_AUTO_EXPAND) 
 
-echo "$NCresponse code=$response" 
-# if $response=1; do
+echo $NC $response 
+if [[ "$response" == *"StackId"* ]]
+then
 echo "The Cloudformation stack will take 20-30 minutes to complete.$NC"
 echo "\n\nCheck the status at any time with the command \n\naws cloudformation describe-stacks --stack-name $StackName --region $AWS_REGION$NC\n\n"
-# else
-# echo "Stack creation failed. Check CloudFormation logs for details, or try:"
-# echo "cloudformation describe-stacks --stack-name $StackName --region $AWS_REGION}"
-# fi
+else
+echo "Stack creation failed. Check CloudFormation logs for details, or try:"
+echo "cloudformation describe-stacks --stack-name $StackName --region $AWS_REGION}"
+fi
+
 }
 env_up

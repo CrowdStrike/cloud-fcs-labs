@@ -93,10 +93,14 @@ Parameters:
     Type: String
     Default: ""
     Description: "Leave blank to use existing SSM Parameter 'psS3Bucket'. Otherwise, use your S3Bucket name that already contains FCSLab template files cloned from GitHub."
+  FalconSecretName:
+    Type: String
+    Default: 'crowdstrike-falcon-api'
+    Description: "default name of secret typically created by startDeployFalcon.sh Bash script or storeSecrets.yaml"
 
   EKSClusterName:
     Type: String
-    Default: 'fcs-lab-EKS'
+    Default: 'fcs-lab'
 
   # PermissionsBoundary:
   #   Type: String
@@ -154,6 +158,7 @@ Resources:
         # EnvHash: !Ref EnvHash
         EnvHash: !If [UseEnvHashInput, !Ref EnvHashInput, !Ref psEnvHash]
         S3CodeBucketName: !If [UseS3BucketInput, !Ref S3BucketInput, !Ref psS3Bucket]
+        FalconSecretName: !Ref FalconSecretName
         FalconClientID: !If [UseInputSecret, !Ref FalconClientID, "{{resolve:secretsmanager:crowdstrike-falcon-api:SecretString:FalconClientId}}"]
         FalconClientSecret: !If [UseInputSecret, !Ref FalconClientSecret, "{{resolve:secretsmanager:crowdstrike-falcon-api:SecretString:FalconSecret}}"]
         FalconCID: !If [UseInputSecret, !Ref FalconCID, "{{resolve:secretsmanager:crowdstrike-falcon-api:SecretString:FalconCID}}"]

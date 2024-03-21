@@ -30,6 +30,10 @@ Metadata:
         default: CrowdStrike Cloud
 
 Parameters:
+  FalconSecretName:
+    Description: "Falcon Secret Name"
+    Type: String
+    Default: 'crowdstrike-falcon-api'
   FalconClientID:
     Description: Your Falcon OAuth2 Client ID.
     NoEcho: 'true'
@@ -190,306 +194,295 @@ Resources:
               - access-analyzer:GetAnalyzer
               - access-analyzer:GetArchiveRule
               - access-analyzer:GetFinding
-              - access-analyzer:ListAnalyzedResources
-              - access-analyzer:ListAnalyzers
-              - access-analyzer:ListArchiveRules
-              - access-analyzer:ListFindings
-              - access-analyzer:ListTagsForResource
-              - acm:Describe*
-              - acm:List*
-              - acm-pca:GetPolicy
-              - acm-pca:ListCertificateAuthorities
-              - application-autoscaling:Describe*
-              - appmesh:Describe*
-              - appmesh:List*
-              - appsync:List*
-              - athena:GetWorkGroup
-              - athena:List*
-              - autoscaling:Describe*
-              - backup:GetBackupVaultAccessPolicy
-              - backup:List*
-              - batch:DescribeComputeEnvironments
-              - batch:DescribeJobDefinitions
-              - chime:List*
-              - cloud9:Describe*
-              - cloud9:ListEnvironments
-              - clouddirectory:ListDirectories
-              - cloudformation:DescribeStack*
-              - cloudformation:GetTemplate
-              - cloudformation:ListStack*
-              - cloudformation:GetStackPolicy
-              - cloudformation:Describe*
-              - cloudformation:List*
-              - cloudfront:Get*
-              - cloudfront:List*
-              - cloudhsm:ListHapgs
-              - cloudhsm:ListHsms
-              - cloudhsm:ListLunaClients
-              - cloudtrail:Describe*
-              - cloudtrail:Get*
-              - cloudtrail:List*
-              - cloudtrail:LookupEvents
-              - cloudwatch:Describe*
-              - cloudwatch:Get*
-              - cloudwatch:List*
-              - codebuild:GetResourcePolicy
-              - codebuild:ListProjects
-              - codebuild:ListReportGroups
-              - codecommit:BatchGetRepositories
-              - codecommit:GetBranch
-              - codecommit:GetObjectIdentifier
-              - codecommit:List*
-              - codedeploy:Batch*
-              - codedeploy:List*
-              - codepipeline:ListPipelines
-              - codestar:Describe*
-              - codestar:List*
-              - cognito-identity:ListIdentityPools
-              - cognito-idp:ListUserPools
-              - cognito-sync:Describe*
-              - cognito-sync:List*
-              - comprehend:List*
-              - config:Batch*
-              - config:Describe*
-              - config:Get*
-              - config:List*
-              - datapipeline:DescribeObjects
-              - datapipeline:DescribePipelines
-              - datapipeline:GetPipelineDefinition
-              - datapipeline:ListPipelines
-              - datapipeline:QueryObjects
-              - datapipeline:ValidatePipelineDefinition
-              - datasync:Describe*
-              - datasync:List*
-              - dax:Describe*
-              - dax:ListTags
-              - detective:Get*
-              - detective:List*
-              - directconnect:Describe*
-              - directconnect:List*
-              - dms:Describe*
-              - dms:ListTagsForResource
-              - ds:DescribeDirectories
-              - dynamodb:Describe*
-              - dynamodb:List*
-              - ec2:Describe*
-              - ec2:GetEbsEncryptionByDefault
-              - ec2:GetEbsDefaultKmsKeyId
-              - ecr:Describe*
-              - ecr:GetRegistryPolicy
-              - ecr:GetRegistryScanningConfiguration
-              - ecr:GetRepositoryPolicy
-              - ecr:List*
-              - ecs:Describe*
-              - ecs:List*
-              - eks:DescribeCluster
-              - eks:ListClusters
-              - eks:Describe*
-              - eks:List*
-              - elasticache:Describe*
-              - elasticache:List*
-              - elasticbeanstalk:Describe*
-              - elasticfilesystem:List*
-              - elasticfilesystem:Describe*
-              - elasticfilesystem:DescribeFileSystems
-              - elasticfilesystem:DescribeMountTargetSecurityGroups
-              - elasticfilesystem:DescribeMountTargets
-              - elasticloadbalancing:Describe*
-              - elasticmapreduce:Describe*
-              - elasticmapreduce:ListClusters
-              - elasticmapreduce:ListInstances
-              - elasticmapreduce:GetBlockPublicAccessConfiguration
-              - es:Describe*
-              - es:ListDomainNames
-              - events:Describe*
-              - events:List*
-              - firehose:Describe*
-              - firehose:List*
-              - fms:ListComplianceStatus
-              - fms:ListPolicies
-              - fsx:Describe*
-              - fsx:List*
-              - gamelift:ListBuilds
-              - gamelift:ListFleets
-              - glacier:DescribeVault
-              - glacier:GetVaultAccessPolicy
-              - glacier:ListVaults
-              - globalaccelerator:Describe*
-              - globalaccelerator:List*
-              - glue:GetResourcePolicy
-              - greengrass:List*
-              - guardduty:Describe*
-              - guardduty:Get*
-              - guardduty:List*
-              - iam:GenerateCredentialReport
-              - iam:GenerateServiceLastAccessedDetails
-              - iam:Get*
-              - iam:List*
-              - iam:SimulateCustomPolicy
-              - iam:SimulatePrincipalPolicy
-              - inspector:Describe*
-              - inspector:Get*
-              - inspector:List*
-              - inspector:Preview*
-              - iot:Describe*
-              - iot:GetPolicy
-              - iot:GetPolicyVersion
-              - iot:List*
-              - kinesis:Describe*
-              - kinesis:List*
-              - kinesisanalytics:ListApplications
-              - kinesisvideo:Describe*
-              - kinesisvideo:List*
-              - kms:Describe*
-              - kms:Get*
-              - kms:List*
-              - lambda:GetAccountSettings
-              - lambda:GetFunctionConfiguration
-              - lambda:GetLayerVersionPolicy
-              - lambda:GetPolicy
-              - lambda:GetFunction
-              - lambda:List*
-              - license-manager:List*
-              - lightsail:GetInstances
-              - lightsail:GetLoadBalancers
-              - logs:Describe*
-              - logs:FilterLogEvents
-              - logs:Get*
-              - logs:ListTagsLogGroup
-              - machinelearning:DescribeMLModels
-              - mediaconnect:Describe*
-              - mediaconnect:List*
-              - mediastore:GetContainerPolicy
-              - mediastore:ListContainers
-              - opsworks:DescribeStacks
-              - opsworks-cm:DescribeServers
-              - organizations:List*
-              - organizations:Describe*
-              - quicksight:Describe*
-              - quicksight:List*
-              - ram:List*
-              - rds:Describe*
-              - rds:List*
-              - rds:ListTagsForResource
-              - redshift:Describe*
-              - redshift:List*
-              - rekognition:Describe*
-              - rekognition:List*
-              - robomaker:Describe*
-              - robomaker:List*
-              - route53:Get*
-              - route53:List*
-              - route53domains:Get*
-              - route53domains:List*
-              - route53resolver:List*
-              - route53resolver:Get*
-              - s3:DescribeJob
-              - s3:GetAccelerateConfiguration
-              - s3:GetAccessPoint
-              - s3:GetAccessPointPolicy
-              - s3:GetAccessPointPolicyStatus
-              - s3:GetAccountPublicAccessBlock
-              - s3:GetAccelerateConfiguration
-              - s3:GetAnalyticsConfiguration
-              - s3:GetBucket*
-              - s3:GetEncryptionConfiguration
-              - s3:GetInventoryConfiguration
-              - s3:GetLifecycleConfiguration
-              - s3:GetMetricsConfiguration
-              - s3:GetObjectAcl
-              - s3:GetObjectLegalHold
-              - s3:GetObjectRetention
-              - s3:GetObjectTagging
-              - s3:GetObjectVersion
-              - s3:GetObjectVersionAcl
-              - s3:GetObjectVersionForReplication
-              - s3:GetObjectVersionTagging
-              - s3:GetReplicationConfiguration
-              - s3:ListAccessPoints
-              - s3:ListAllMyBuckets
-              - s3:ListBucketVersions
-              - s3:ListJobs
-              - sagemaker:Describe*
-              - sagemaker:List*
-              - schemas:GetResourcePolicy
-              - schemas:ListRegistries
-              - sdb:DomainMetadata
-              - sdb:ListDomains
-              - secretsmanager:GetResourcePolicy
-              - secretsmanager:ListSecrets
-              - secretsmanager:ListSecretVersionIds
-              - securityhub:Describe*
-              - securityhub:Get*
-              - securityhub:List*
-              - serverlessrepo:GetApplicationPolicy
-              - serverlessrepo:List*
-              - servicequotas:Get*
-              - servicequotas:List*
-              - ses:GetIdentityDkimAttributes
-              - ses:GetIdentityPolicies
-              - ses:GetIdentityVerificationAttributes
-              - ses:Describe*
-              - ses:ListIdentities
-              - ses:ListIdentityPolicies
-              - ses:ListVerifiedEmailAddresses
-              - ses:ListConfigurationSets
-              - ses:ListReceiptRuleSets
-              - ses:ListIdentities
-              - shield:Describe*
-              - shield:List*
-              - snowball:ListClusters
-              - snowball:ListJobs
-              - sns:Get*
-              - sns:ListPlatformApplications
-              - sns:ListSubscriptions
-              - sns:ListTagsForResource
-              - sns:ListTopics
-              - sqs:Get*
-              - sqs:List*
-              - ssm:Describe*
-              - ssm:GetAutomationExecution
-              - ssm:ListDocuments
-              - sso:DescribePermissionsPolicies
-              - ssm:List*
-              - ssm:GetAutomationExecution
-              - ssm:GetConnectionStatus
-              - ssm:GetDefaultPatchBaseline
-              - ssm:GetDeployablePatchSnapshotForInstance
-              - ssm:ListTagsForResource
-              - ssm:GetServiceSetting
-              - ssm:GetInventory
-              - ssm:GetCommandInvocation
-              - sso:DescribePermissionsPolicies
-              - sso:List*
-              - states:ListStateMachines
-              - storagegateway:DescribeBandwidthRateLimit
-              - storagegateway:DescribeCache
-              - storagegateway:DescribeCachediSCSIVolumes
-              - storagegateway:DescribeGatewayInformation
-              - storagegateway:DescribeMaintenanceStartTime
-              - storagegateway:DescribeNFSFileShares
-              - storagegateway:DescribeSnapshotSchedule
-              - storagegateway:DescribeStorediSCSIVolumes
-              - storagegateway:DescribeTapeArchives
-              - storagegateway:DescribeTapeRecoveryPoints
-              - storagegateway:DescribeTapes
-              - storagegateway:DescribeUploadBuffer
-              - storagegateway:DescribeVTLDevices
-              - storagegateway:DescribeWorkingStorage
-              - storagegateway:List*
-              - tag:GetResources
-              - tag:GetTagKeys
-              - transfer:Describe*
-              - transfer:List*
-              - translate:List*
-              - trustedadvisor:Describe*
-              - waf:Get*
-              - waf:List*
-              - waf-regional:Get*
-              - waf-regional:List*
-              - wafv2:Describe*
-              - wafv2:Get*
-              - wafv2:List*
+              - access-analyzer:ListAnalyzedResources 
+              - access-analyzer:ListAnalyzers 
+              - access-analyzer:ListArchiveRules 
+              - access-analyzer:ListFindings 
+              - access-analyzer:ListTagsForResource 
+              - acm:Describe* 
+              - acm:List* 
+              - acm-pca:GetPolicy 
+              - acm-pca:ListCertificateAuthorities 
+              - application-autoscaling:Describe* 
+              - appmesh:Describe* 
+              - appmesh:List* 
+              - appsync:List* 
+              - athena:GetWorkGroup 
+              - athena:List* 
+              - autoscaling:Describe* 
+              - backup:GetBackupVaultAccessPolicy 
+              - backup:List* 
+              - batch:DescribeComputeEnvironments 
+              - batch:DescribeJobDefinitions 
+              - chime:List* 
+              - cloud9:Describe* 
+              - cloud9:ListEnvironments 
+              - clouddirectory:ListDirectories 
+              - cloudformation:GetTemplate 
+              - cloudformation:GetStackPolicy 
+              - cloudformation:Describe* 
+              - cloudformation:List* 
+              - cloudfront:Get* 
+              - cloudfront:List* 
+              - cloudhsm:ListHapgs 
+              - cloudhsm:ListHsms 
+              - cloudhsm:ListLunaClients 
+              - cloudtrail:Describe* 
+              - cloudtrail:Get* 
+              - cloudtrail:List* 
+              - cloudtrail:LookupEvents 
+              - cloudwatch:Describe* 
+              - cloudwatch:Get* 
+              - cloudwatch:List* 
+              - codebuild:GetResourcePolicy 
+              - codebuild:ListProjects 
+              - codebuild:ListReportGroups 
+              - codecommit:BatchGetRepositories 
+              - codecommit:GetBranch 
+              - codecommit:GetObjectIdentifier 
+              - codecommit:List* 
+              - codedeploy:Batch* 
+              - codedeploy:List* 
+              - codepipeline:ListPipelines 
+              - codestar:Describe* 
+              - codestar:List* 
+              - cognito-identity:ListIdentityPools 
+              - cognito-idp:ListUserPools 
+              - cognito-sync:Describe* 
+              - cognito-sync:List* 
+              - comprehend:List* 
+              - config:Batch* 
+              - config:Describe* 
+              - config:Get* 
+              - config:List* 
+              - datapipeline:DescribeObjects 
+              - datapipeline:DescribePipelines 
+              - datapipeline:GetPipelineDefinition 
+              - datapipeline:ListPipelines 
+              - datapipeline:QueryObjects 
+              - datapipeline:ValidatePipelineDefinition 
+              - datasync:Describe* 
+              - datasync:List* 
+              - dax:Describe* 
+              - dax:ListTags 
+              - detective:Get* 
+              - detective:List* 
+              - directconnect:Describe* 
+              - directconnect:List* 
+              - dms:Describe* 
+              - dms:ListTagsForResource 
+              - ds:DescribeDirectories 
+              - dynamodb:Describe* 
+              - dynamodb:List* 
+              - ec2:Describe* 
+              - ec2:GetEbsEncryptionByDefault 
+              - ec2:GetEbsDefaultKmsKeyId 
+              - ecr:Describe* 
+              - ecr:GetRegistryPolicy 
+              - ecr:GetRegistryScanningConfiguration 
+              - ecr:GetRepositoryPolicy 
+              - ecr:List* 
+              - ecr:BatchGetImage 
+              - ecr:GetDownloadUrlForLayer 
+              - ecs:Describe* 
+              - ecs:List* 
+              - eks:Describe* 
+              - eks:List* 
+              - elasticache:Describe* 
+              - elasticache:List* 
+              - elasticbeanstalk:Describe* 
+              - elasticfilesystem:List* 
+              - elasticfilesystem:Describe* 
+              - elasticloadbalancing:Describe* 
+              - elasticmapreduce:Describe* 
+              - elasticmapreduce:ListClusters 
+              - elasticmapreduce:ListInstances 
+              - elasticmapreduce:GetBlockPublicAccessConfiguration 
+              - es:Describe* 
+              - es:ListDomainNames 
+              - events:Describe* 
+              - events:List* 
+              - firehose:Describe* 
+              - firehose:List* 
+              - fms:ListComplianceStatus 
+              - fms:ListPolicies 
+              - fsx:Describe* 
+              - fsx:List* 
+              - gamelift:ListBuilds 
+              - gamelift:ListFleets 
+              - glacier:DescribeVault 
+              - glacier:GetVaultAccessPolicy 
+              - glacier:ListVaults 
+              - globalaccelerator:Describe* 
+              - globalaccelerator:List* 
+              - glue:GetResourcePolicy 
+              - greengrass:List* 
+              - guardduty:Describe* 
+              - guardduty:Get* 
+              - guardduty:List* 
+              - iam:GenerateCredentialReport 
+              - iam:GenerateServiceLastAccessedDetails 
+              - iam:Get* 
+              - iam:List* 
+              - iam:SimulateCustomPolicy 
+              - iam:SimulatePrincipalPolicy 
+              - inspector:Describe* 
+              - inspector:Get* 
+              - inspector:List* 
+              - inspector:Preview* 
+              - iot:Describe* 
+              - iot:GetPolicy 
+              - iot:GetPolicyVersion 
+              - iot:List* 
+              - kinesis:Describe* 
+              - kinesis:List* 
+              - kinesisanalytics:ListApplications 
+              - kinesisvideo:Describe* 
+              - kinesisvideo:List* 
+              - kms:Describe* 
+              - kms:Get* 
+              - kms:List* 
+              - lambda:GetAccountSettings 
+              - lambda:GetFunctionConfiguration 
+              - lambda:GetLayerVersionPolicy 
+              - lambda:GetLayerVersion 
+              - lambda:GetPolicy 
+              - lambda:GetFunction 
+              - lambda:List* 
+              - license-manager:List* 
+              - lightsail:GetInstances 
+              - lightsail:GetLoadBalancers 
+              - logs:Describe* 
+              - logs:FilterLogEvents 
+              - logs:Get* 
+              - logs:ListTagsLogGroup 
+              - machinelearning:DescribeMLModels 
+              - mediaconnect:Describe* 
+              - mediaconnect:List* 
+              - mediastore:GetContainerPolicy 
+              - mediastore:ListContainers 
+              - opsworks:DescribeStacks 
+              - opsworks-cm:DescribeServers 
+              - organizations:List* 
+              - organizations:Describe* 
+              - quicksight:Describe* 
+              - quicksight:List* 
+              - ram:List* 
+              - rds:Describe* 
+              - rds:List* 
+              - redshift:Describe* 
+              - redshift:List* 
+              - rekognition:Describe* 
+              - rekognition:List* 
+              - robomaker:Describe* 
+              - robomaker:List* 
+              - route53:Get* 
+              - route53:List* 
+              - route53domains:Get* 
+              - route53domains:List* 
+              - route53resolver:List* 
+              - route53resolver:Get* 
+              - s3:DescribeJob 
+              - s3:GetAccelerateConfiguration 
+              - s3:GetAccessPoint 
+              - s3:GetAccessPointPolicy 
+              - s3:GetAccessPointPolicyStatus 
+              - s3:GetAccountPublicAccessBlock 
+              - s3:GetAnalyticsConfiguration 
+              - s3:GetBucket* 
+              - s3:GetEncryptionConfiguration 
+              - s3:GetInventoryConfiguration 
+              - s3:GetLifecycleConfiguration 
+              - s3:GetMetricsConfiguration 
+              - s3:GetObjectAcl 
+              - s3:GetObjectLegalHold 
+              - s3:GetObjectRetention 
+              - s3:GetObjectTagging 
+              - s3:GetObjectVersion 
+              - s3:GetObjectVersionAcl 
+              - s3:GetObjectVersionForReplication 
+              - s3:GetObjectVersionTagging 
+              - s3:GetReplicationConfiguration 
+              - s3:ListAccessPoints 
+              - s3:ListAllMyBuckets 
+              - s3:ListBucketVersions 
+              - s3:ListJobs 
+              - sagemaker:Describe* 
+              - sagemaker:List* 
+              - schemas:GetResourcePolicy 
+              - schemas:ListRegistries 
+              - sdb:DomainMetadata 
+              - sdb:ListDomains 
+              - secretsmanager:GetResourcePolicy 
+              - secretsmanager:ListSecrets 
+              - secretsmanager:ListSecretVersionIds 
+              - securityhub:Describe* 
+              - securityhub:Get* 
+              - securityhub:List* 
+              - serverlessrepo:GetApplicationPolicy 
+              - serverlessrepo:List* 
+              - servicequotas:Get* 
+              - servicequotas:List* 
+              - ses:GetIdentityDkimAttributes 
+              - ses:GetIdentityPolicies 
+              - ses:GetIdentityVerificationAttributes 
+              - ses:Describe* 
+              - ses:ListIdentities 
+              - ses:ListIdentityPolicies 
+              - ses:ListVerifiedEmailAddresses 
+              - ses:ListConfigurationSets 
+              - ses:ListReceiptRuleSets 
+              - shield:Describe* 
+              - shield:List* 
+              - snowball:ListClusters 
+              - snowball:ListJobs 
+              - sns:Get* 
+              - sns:ListPlatformApplications 
+              - sns:ListSubscriptions 
+              - sns:ListTagsForResource 
+              - sns:ListTopics 
+              - sqs:Get* 
+              - sqs:List* 
+              - ssm:Describe* 
+              - ssm:GetAutomationExecution 
+              - sso:DescribePermissionsPolicies 
+              - ssm:List* 
+              - ssm:GetConnectionStatus 
+              - ssm:GetDefaultPatchBaseline 
+              - ssm:GetDeployablePatchSnapshotForInstance 
+              - ssm:GetServiceSetting 
+              - ssm:GetInventory 
+              - ssm:GetCommandInvocation 
+              - sso:List* 
+              - states:ListStateMachines 
+              - storagegateway:DescribeBandwidthRateLimit 
+              - storagegateway:DescribeCache 
+              - storagegateway:DescribeCachediSCSIVolumes 
+              - storagegateway:DescribeGatewayInformation 
+              - storagegateway:DescribeMaintenanceStartTime 
+              - storagegateway:DescribeNFSFileShares 
+              - storagegateway:DescribeSnapshotSchedule 
+              - storagegateway:DescribeStorediSCSIVolumes 
+              - storagegateway:DescribeTapeArchives 
+              - storagegateway:DescribeTapeRecoveryPoints 
+              - storagegateway:DescribeTapes 
+              - storagegateway:DescribeUploadBuffer 
+              - storagegateway:DescribeVTLDevices 
+              - storagegateway:DescribeWorkingStorage 
+              - storagegateway:List* 
+              - tag:GetResources 
+              - tag:GetTagKeys 
+              - transfer:Describe* 
+              - transfer:List* 
+              - translate:List* 
+              - trustedadvisor:Describe* 
+              - waf:Get* 
+              - waf:List* 
+              - waf-regional:Get* 
+              - waf-regional:List* 
+              - wafv2:Describe* 
+              - wafv2:Get* 
+              - wafv2:List* 
               - workspaces:Describe*
               Resource: "*"
               Effect: Allow
@@ -681,22 +674,19 @@ Resources:
               AWS:SourceArn: !Sub arn:aws:cloudtrail:${AWS::Region}:${AWS::AccountId}:trail/${TrailName}-${EnvHash}
               
 # Create Lambda and Supporting Resources to register Account
-  CrowdStrikeSecrets:
-    Type: AWS::SecretsManager::Secret
-    Properties:
-      Description: CrowdStrike Credentials
-      Name: !Join
-        - '-'
-        - - CrowdStrikeHorizonAPISecret
-          - !Ref 'AWS::StackName'
-      SecretString:
-        Fn::Join:
-          - ''
-          - - '{"FalconClientId":"'
-            - Ref: "FalconClientID"
-            - '","FalconSecret": "'
-            - Ref: FalconSecret
-            - '"}'
+  # CrowdStrikeSecrets:
+  #   Type: AWS::SecretsManager::Secret
+  #   Properties:
+  #     Description: CrowdStrike Credentials
+  #     Name: !Ref FalconSecretName 
+  #     SecretString:
+  #       Fn::Join:
+  #         - ''
+  #         - - '{"FalconClientId":"'
+  #           - Ref: "FalconClientID"
+  #           - '","FalconSecret": "'
+  #           - Ref: FalconSecret
+  #           - '"}'
   LambdaCrowdStrikeRegistrationRole:
     Type: AWS::IAM::Role
     Properties:
@@ -718,13 +708,13 @@ Resources:
                 Action:
                   - 'secretsmanager:GetSecretValue'
                 Resource:
-                  - !Sub 'arn:${AWS::Partition}:secretsmanager:*:*:secret:CrowdStrikeHorizonAPISecret-*'
+                  - !Sub 'arn:${AWS::Partition}:secretsmanager:*:*:secret:${FalconSecretName}'
       ManagedPolicyArns:
         - !Sub 'arn:${AWS::Partition}:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'
   RegisterAccountLambda:
     Type: AWS::Lambda::Function
-    DependsOn:
-      - CrowdStrikeSecrets
+    # DependsOn:
+    #   - CrowdStrikeSecrets
     Metadata:
       cfn_nag:
         rules_to_suppress:
@@ -736,10 +726,7 @@ Resources:
       Environment:
         Variables:
           SecretRegion: !Ref AWS::Region
-          SecretName: !Join
-            - '-'
-            - - CrowdStrikeHorizonAPISecret
-              - !Ref 'AWS::StackName'
+          SecretName: !Ref FalconSecretName
       Handler: index.lambda_handler
       MemorySize: 128
       Role: !GetAtt "LambdaCrowdStrikeRegistrationRole.Arn"
@@ -930,7 +917,7 @@ Resources:
     Type: 'Custom::TriggerLambda'
     DependsOn:
       - LambdaCrowdStrikeRegistrationRole
-      - CrowdStrikeSecrets
+      # - CrowdStrikeSecrets
     Properties:
       aws_region: !Ref AWS::Region
       CSCloud: !Ref CSCloud

@@ -6,11 +6,11 @@ Parameters:
   KubernetesVersion:
     Description: Kubernetes version
     Type: String
-    Default: "1.26"
+    Default: "1.28"
   EKSClusterName:
     Description: Name of EKS Cluster
     Type: String
-    Default: fcs-lab-EKS-Cluster-12345
+    Default: fcs-lab
   WorkerNodeInstanceType:
     Description: Worker Node cluster instances
     Type: String
@@ -128,7 +128,7 @@ Resources:
                       region: ${AWS::Region}
                       version: "${KubernetesVersion}"
                     managedNodeGroups:
-                      - name: nodegroup
+                      - name: ng-1
                         instanceType: ${WorkerNodeInstanceType}
                         desiredCapacity: 2
                         minSize: 2

@@ -13,6 +13,10 @@ Parameters:
     Type: String
     Default: sensor-image-import
   # AWS Secrets Manager
+  FalconSecretName:
+    Description: 'Secret name for the Falcon API credentials'
+    Type: String
+    Default: 'crowdstrike-falcon-api'
   CrowdStrikeCloud:
     Description: 'CrowdStrike Cloud'
     Type: String
@@ -87,7 +91,7 @@ Parameters:
   EKSClusterName:
     Description: EKS Cluster name to deploy to
     Type: String
-    Default: 'fcs-lab-EKS-cluster'
+    Default: 'fcs-lab'
   PodS3AccessRoleArn:
     Description: IAM Role to associate with the Service Account
     Type: String
@@ -118,10 +122,10 @@ Resources:
       Description: 'Client ID and Secret for the Falcon API'
       SecretString: !Sub |
         {
-          "client_id": "${FalconClientID}",
-          "client_secret": "${FalconClientSecret}",
-          "cid": "${FalconCID}",
-          "cs_cloud":"${CrowdStrikeCloud}"
+          "FalconClientId": "${FalconClientID}",
+          "FalconSecret": "${FalconClientSecret}",
+          "FalconCID": "${FalconCID}",
+          "CSCloud":"${CrowdStrikeCloud}"
         }
   CodePipelineBucketParameter:
     Type: AWS::SSM::Parameter
@@ -465,7 +469,7 @@ Resources:
             Action:
               - secretsmanager:*
             Resource:
-              - !Ref SMFalconAPIKey
+              - '{{resolve:ssm:psFalconSecretArn}}'
   ECRCodeBuildProject:
     Type: AWS::CodeBuild::Project
     Properties:
@@ -488,18 +492,18 @@ Resources:
             Type: PLAINTEXT
           - Name: FALCON_CLIENT_ID
             Value: !Sub
-              - '${arn}:client_id'
-              - { arn: !Ref SMFalconAPIKey }
+              - '${arn}:FalconClientId'
+              - { arn: '{{resolve:ssm:psFalconSecretArn}}' }
             Type: SECRETS_MANAGER
           - Name: FALCON_CLIENT_SECRET
             Value: !Sub
-              - '${arn}:client_secret'
-              - { arn: !Ref SMFalconAPIKey }
+              - '${arn}:FalconSecret'
+              - { arn: '{{resolve:ssm:psFalconSecretArn}}' }
             Type: SECRETS_MANAGER
           - Name: CS_CLOUD
             Value: !Sub
-              - '${arn}:cs_cloud'
-              - { arn: !Ref SMFalconAPIKey }
+              - '${arn}:CSCloud'
+              - { arn: '{{resolve:ssm:psFalconSecretArn}}' }
             Type: SECRETS_MANAGER
           - Name: CS_SCAN_IMAGE
             Value: 'False'
@@ -621,23 +625,23 @@ Resources:
         EnvironmentVariables:
           - Name: FALCON_CLIENT_ID
             Value: !Sub
-              - '${arn}:client_id'
-              - { arn: !Ref SMFalconAPIKey }
+              - '${arn}:FalconClientId'
+              - { arn: '{{resolve:ssm:psFalconSecretArn}}' }
             Type: SECRETS_MANAGER
           - Name: FALCON_CLIENT_SECRET
             Value: !Sub
-              - '${arn}:client_secret'
-              - { arn: !Ref SMFalconAPIKey }
+              - '${arn}:FalconSecret'
+              - { arn: '{{resolve:ssm:psFalconSecretArn}}' }
             Type: SECRETS_MANAGER
           - Name: FALCON_CID
             Value: !Sub
-              - '${arn}:cid'
-              - { arn: !Ref SMFalconAPIKey }
+              - '${arn}:FalconCID'
+              - { arn: '{{resolve:ssm:psFalconSecretArn}}' }
             Type: SECRETS_MANAGER
           - Name: CS_CLOUD
             Value: !Sub
-              - '${arn}:cs_cloud'
-              - { arn: !Ref SMFalconAPIKey }
+              - '${arn}:CSCloud'
+              - { arn: '{{resolve:ssm:psFalconSecretArn}}' }
             Type: SECRETS_MANAGER
           - Name: REPO_URI
             Value: !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com"
@@ -674,23 +678,23 @@ Resources:
             Type: PLAINTEXT
           - Name: FALCON_CLIENT_ID
             Value: !Sub
-              - '${arn}:client_id'
-              - { arn: !Ref SMFalconAPIKey }
+              - '${arn}:FalconClientId'
+              - { arn: '{{resolve:ssm:psFalconSecretArn}}' }
             Type: SECRETS_MANAGER
           - Name: FALCON_CLIENT_SECRET
             Value: !Sub
-              - '${arn}:client_secret'
-              - { arn: !Ref SMFalconAPIKey }
+              - '${arn}:FalconSecret'
+              - { arn: '{{resolve:ssm:psFalconSecretArn}}' }
             Type: SECRETS_MANAGER
           - Name: FALCON_CID
             Value: !Sub
-              - '${arn}:cid'
-              - { arn: !Ref SMFalconAPIKey }
+              - '${arn}:FalconCID'
+              - { arn: '{{resolve:ssm:psFalconSecretArn}}' }
             Type: SECRETS_MANAGER
           - Name: CS_CLOUD
             Value: !Sub
-              - '${arn}:cs_cloud'
-              - { arn: !Ref SMFalconAPIKey }
+              - '${arn}:CSCloud'
+              - { arn: '{{resolve:ssm:psFalconSecretArn}}' }
             Type: SECRETS_MANAGER
           - Name: KAC_IMAGE_REPO
             Value: !GetAtt KacEcrRepository.RepositoryUri
@@ -774,18 +778,18 @@ Resources:
             Type: PLAINTEXT
           - Name: FALCON_CLIENT_ID
             Value: !Sub
-              - '${arn}:client_id'
-              - { arn: !Ref SMFalconAPIKey }
+              - '${arn}:FalconClientId'
+              - { arn: '{{resolve:ssm:psFalconSecretArn}}' }
             Type: SECRETS_MANAGER
           - Name: FALCON_CLIENT_SECRET
             Value: !Sub
-              - '${arn}:client_secret'
-              - { arn: !Ref SMFalconAPIKey }
+              - '${arn}:FalconSecret'
+              - { arn: '{{resolve:ssm:psFalconSecretArn}}' }
             Type: SECRETS_MANAGER
           - Name: CS_CLOUD
             Value: !Sub
-              - '${arn}:cs_cloud'
-              - { arn: !Ref SMFalconAPIKey }
+              - '${arn}:CSCloud'
+              - { arn: '{{resolve:ssm:psFalconSecretArn}}' }
             Type: SECRETS_MANAGER
           - Name: CS_SCAN_IMAGE
             Value: 'True'

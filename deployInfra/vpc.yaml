@@ -9,6 +9,9 @@ Parameters:
   EnvHash:
     Type: String
     Default: ''
+  EKSClusterName:
+    Type: String
+    Default: 'fcs-lab'
   # PermissionsBoundary:
   #   Type: String
   #   Default: ''
@@ -186,7 +189,7 @@ Resources:
       Tags:
       - Key: kubernetes.io/role/internal-elb
         Value: '1'
-      - Key: kubernetes.io/cluster/fcs-lab-EKS-cluster
+      - Key: !Sub kubernetes.io/cluster/${EKSClusterName}
         Value: shared
       - Key: Name
         Value:
@@ -204,7 +207,7 @@ Resources:
       Tags:
       - Key: kubernetes.io/role/internal-elb
         Value: '1'
-      - Key: kubernetes.io/cluster/fcs-lab-EKS-cluster
+      - Key: !Sub kubernetes.io/cluster/${EKSClusterName}
         Value: shared
       - Key: Name
         Value:
@@ -223,7 +226,7 @@ Resources:
       Tags:
       - Key: kubernetes.io/role/elb
         Value: '1'
-      - Key: kubernetes.io/cluster/fcs-lab-EKS-cluster
+      - Key: !Sub kubernetes.io/cluster/${EKSClusterName}
         Value: shared
       - Key: Name
         Value:
@@ -242,7 +245,7 @@ Resources:
       Tags:
       - Key: kubernetes.io/role/elb
         Value: '1'
-      - Key: kubernetes.io/cluster/fcs-lab-EKS-cluster
+      - Key: !Sub kubernetes.io/cluster/${EKSClusterName}
         Value: shared
       - Key: Name
         Value:

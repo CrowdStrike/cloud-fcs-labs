@@ -43,32 +43,32 @@ function setup_kubeconfig() {
 
     printf "\nKube Config:\n"
     
-    aws eks update-kubeconfig --name fcs-lab-EKS-cluster --region ${region}
+    aws eks update-kubeconfig --name fcs-lab --region ${region}
 
   # AWS Load Balancer Controller install script
     # cat >lbc-deploy.sh <<EOF
     # helm repo add eks https://aws.github.io/eks-charts
-    # helm install aws-load-balancer-controller eks/aws-load-balancer-controller -n kube-system --set clusterName=fcs-lab-EKS-cluster --set serviceAccount.create=false --set serviceAccount.name=aws-load-balancer-controller
+    # helm install aws-load-balancer-controller eks/aws-load-balancer-controller -n kube-system --set clusterName=fcs-lab --set serviceAccount.create=false --set serviceAccount.name=aws-load-balancer-controller
     # EOF
 
     # Add SSM Config for ssm-user
     /sbin/useradd -d /home/ssm-user -u 1001 -s /bin/bash -m --user-group ssm-user
     mkdir -p /home/ssm-user/.kube/
     cp ~/.kube/config /home/ssm-user/.kube/config
-    cp lbc-deploy.sh /home/ssm-user/
+    # cp lbc-deploy.sh /home/ssm-user/
     cp /etc/profile.d/kubectl.sh /home/ssm-user/  
     
     instanceId=$(curl -s http://169.254.169.254/latest/meta-data/instance-id)
     stackName=$(aws ec2 describe-tags --filters "Name=resource-id,Values=$instanceId" "Name=key,Values=aws:cloudformation:stack-name" --query 'Tags[*].Value' --output text)
     EnvHash=${stackName:16:5}
-    S3Bucket=fcs-stack-${EnvHash}
+    S3Bucket=$(aws ssm get-parameter --name "psS3Bucket" --query 'Parameter.Value' --output text --region=$region)
     cd /tmp
-    aws s3 cp s3://$S3Bucket/StackDeletionCleanup.sh StackDeletionCleanup.sh
+    aws s3 cp s3://$S3Bucket/tools/StackDeletionCleanup.sh StackDeletionCleanup.sh
     cp ./StackDeletionCleanup.sh /home/ssm-user/ 
     chown -R ssm-user:ssm-user /home/ssm-user/
     chmod -R og-rwx /home/ssm-user/.kube
-    chmod +x /home/ssm-user/lbc-deploy.sh
-    chmod +x /home/ssm-user/kubectl.sh
+    # chmod +x /home/ssm-user/lbc-deploy.sh
+    # chmod +x /home/ssm-user/kubectl.sh
     chmod +x /home/ssm-user/StackDeletionCleanup.sh
 
 }

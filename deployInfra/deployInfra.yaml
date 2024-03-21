@@ -36,7 +36,7 @@ Parameters:
     Description: Kubernetes control plane version.
   EKSClusterName:
     Type: String
-    Default: "fcs-lab-EKS"
+    Default: "fcs-lab"
 
  # Optional
   # RemoteAccessCIDR:
@@ -84,6 +84,7 @@ Resources:
         EnvAlias: !Ref EnvAlias
         EnvHash: !If [UseEnvHashInput, !Ref EnvHashInput, !Ref psEnvHash]
         S3Bucket: !If [UseS3BucketInput, !Ref S3BucketInput, !Ref psS3Bucket]
+        EKSClusterName: !Ref EKSClusterName
         # PermissionsBoundary: !Ref PermissionsBoundary
 
   EKSCodeBuildStack:

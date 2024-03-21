@@ -58,6 +58,8 @@ then
 else
   aws secretsmanager create-secret --name crowdstrike-falcon-api
   aws secretsmanager put-secret-value --secret-id crowdstrike-falcon-api --secret-string file://tmpsecret.json 
+  FalconSecretArn=$(aws secretsmanager list-secrets --query 'SecretList[].ARN[]' --output text --region $AWS_REGION | grep crowdstrike-falcon-api)
+  aws ssm put-parameter --name=psFalconSecretArn --value="${FalconSecretArn}" --region=$AWS_REGION --type=String --overwrite 
 fi
 
 rm tmpsecret.json
@@ -72,7 +74,15 @@ rm tmpsecret.json
 
 echo $NC$response
 
-    echo "$NC The Cloudformation stack will take 20-30 minutes to complete."
-    echo "\n\nCheck the status at any time with the command \n\naws cloudformation describe-stacks --stack-name $StackName --region $AWS_REGION$NC\n\n"
+echo $NC $response 
+if [[ "$response" == *"StackId"* ]]
+then
+echo "The Cloudformation stack will take 20-30 minutes to complete.$NC"
+echo "\n\nCheck the status at any time with the command \n\naws cloudformation describe-stacks --stack-name $StackName --region $AWS_REGION$NC\n\n"
+else
+echo "Stack creation failed. Check CloudFormation logs for details, or try:"
+echo "cloudformation describe-stacks --stack-name $StackName --region $AWS_REGION}"
+fi
+ 
 }
 env_up
