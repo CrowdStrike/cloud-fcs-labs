@@ -32,7 +32,7 @@ Parameters:
   KubernetesVersion:
     Type: String
     AllowedValues: [ "1.25", "1.26", "1.27", "1.28", "1.29" ]
-    Default: "1.27"
+    Default: "1.28"
     Description: Kubernetes control plane version.
   EKSClusterName:
     Type: String

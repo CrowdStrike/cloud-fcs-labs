@@ -1,5 +1,0 @@
-secretString="{\"client_id\":\"${FalconClientID}\",\"client_secret\":\"${FalconClientSecret}\",\"cid\":\"${FalconCID}\",\"cs_cloud\":\"${CrowdStrikeCloud}\"}"
-echo $secretString
-aws secretsmanager create-secret \
-  --name secretName \
-  --secret-string $secretString

@@ -115,18 +115,18 @@ Resources:
   #        Falcon Secrets        #
   #                              #
   ################################
-  SMFalconAPIKey:
-    Type: AWS::SecretsManager::Secret
-    Properties:
-      Name: !Sub 'FalconAPIKey-${EnvHash}' 
-      Description: 'Client ID and Secret for the Falcon API'
-      SecretString: !Sub |
-        {
-          "FalconClientId": "${FalconClientID}",
-          "FalconSecret": "${FalconClientSecret}",
-          "FalconCID": "${FalconCID}",
-          "CSCloud":"${CrowdStrikeCloud}"
-        }
+  # SMFalconAPIKey:
+  #   Type: AWS::SecretsManager::Secret
+  #   Properties:
+  #     Name: !Sub 'FalconAPIKey-${EnvHash}' 
+  #     Description: 'Client ID and Secret for the Falcon API'
+  #     SecretString: !Sub |
+  #       {
+  #         "FalconClientId": "${FalconClientID}",
+  #         "FalconSecret": "${FalconClientSecret}",
+  #         "FalconCID": "${FalconCID}",
+  #         "CSCloud":"${CrowdStrikeCloud}"
+  #       }
   CodePipelineBucketParameter:
     Type: AWS::SSM::Parameter
     Properties:

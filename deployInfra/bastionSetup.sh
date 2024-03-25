@@ -45,17 +45,10 @@ function setup_kubeconfig() {
     
     aws eks update-kubeconfig --name fcs-lab --region ${region}
 
-  # AWS Load Balancer Controller install script
-    # cat >lbc-deploy.sh <<EOF
-    # helm repo add eks https://aws.github.io/eks-charts
-    # helm install aws-load-balancer-controller eks/aws-load-balancer-controller -n kube-system --set clusterName=fcs-lab --set serviceAccount.create=false --set serviceAccount.name=aws-load-balancer-controller
-    # EOF
-
     # Add SSM Config for ssm-user
     /sbin/useradd -d /home/ssm-user -u 1001 -s /bin/bash -m --user-group ssm-user
     mkdir -p /home/ssm-user/.kube/
     cp ~/.kube/config /home/ssm-user/.kube/config
-    # cp lbc-deploy.sh /home/ssm-user/
     cp /etc/profile.d/kubectl.sh /home/ssm-user/  
     
     instanceId=$(curl -s http://169.254.169.254/latest/meta-data/instance-id)
@@ -67,9 +60,7 @@ function setup_kubeconfig() {
     cp ./StackDeletionCleanup.sh /home/ssm-user/ 
     chown -R ssm-user:ssm-user /home/ssm-user/
     chmod -R og-rwx /home/ssm-user/.kube
-    # chmod +x /home/ssm-user/lbc-deploy.sh
-    # chmod +x /home/ssm-user/kubectl.sh
-    chmod +x /home/ssm-user/StackDeletionCleanup.sh
+    chmod +x /home/ssm-user/StackCleanup.sh
 
 }
 

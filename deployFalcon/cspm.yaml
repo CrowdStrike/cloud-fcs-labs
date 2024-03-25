@@ -36,11 +36,11 @@ Parameters:
     Default: 'crowdstrike-falcon-api'
   FalconClientID:
     Description: Your Falcon OAuth2 Client ID.
-    NoEcho: 'true'
+    # NoEcho: 'true'
     Type: String
   FalconSecret:
     Description: Your Falcon OAuth2 API Secret.
-    NoEcho: 'true'
+    # NoEcho: 'true'
     Type: String
   CSCloud:
     Type: String
@@ -678,12 +678,15 @@ Resources:
   #   Type: AWS::SecretsManager::Secret
   #   Properties:
   #     Description: CrowdStrike Credentials
-  #     Name: !Ref FalconSecretName 
+  #     Name: !Join
+  #       - '-'
+  #       - - !Ref FalconSecretName 
+  #         - !Ref 'AWS::StackName'
   #     SecretString:
   #       Fn::Join:
   #         - ''
   #         - - '{"FalconClientId":"'
-  #           - Ref: "FalconClientID"
+  #           - Ref: FalconClientID
   #           - '","FalconSecret": "'
   #           - Ref: FalconSecret
   #           - '"}'
@@ -708,13 +711,11 @@ Resources:
                 Action:
                   - 'secretsmanager:GetSecretValue'
                 Resource:
-                  - !Sub 'arn:${AWS::Partition}:secretsmanager:*:*:secret:${FalconSecretName}'
+                  - !Sub 'arn:${AWS::Partition}:secretsmanager:*:*:secret:${FalconSecretName}*'
       ManagedPolicyArns:
         - !Sub 'arn:${AWS::Partition}:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'
   RegisterAccountLambda:
     Type: AWS::Lambda::Function
-    # DependsOn:
-    #   - CrowdStrikeSecrets
     Metadata:
       cfn_nag:
         rules_to_suppress:
@@ -917,7 +918,6 @@ Resources:
     Type: 'Custom::TriggerLambda'
     DependsOn:
       - LambdaCrowdStrikeRegistrationRole
-      # - CrowdStrikeSecrets
     Properties:
       aws_region: !Ref AWS::Region
       CSCloud: !Ref CSCloud

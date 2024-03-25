@@ -1,4 +1,19 @@
-NC="\033[0;0m"
+#-----------------------------------#
+#  Start FCS FalconStack deployment  #
+#-----------------------------------#
+
+# The startDeployFalcon is the final step of FCS-Lab deployment which includes creation of CI/CD pipelines for ECR/EKS protection components
+
+# Prerequisite for running the startDeployFalcon script requires the you already provisioned the FCSlab InfraStack and that Parameter Store has entries for:
+  # psEnvHash, psS3Bucket, psInfraStack, and psLoggingBucket.
+  # If any of these parameters are missing, delete any FCS-Lab stacks in CloudFormation (including EKS clusters with "fcs-lab"), and start from the beginning (startDeployInfra.sh)
+  # you could also populate the parameters manually with the ./ParameterSetup.sh or ./setStackParameters.yaml
+
+# startDeployFalcon creates a reusable secret called "crowdstrike-falcon-api" in AWS Secrets Manager. 
+  # If that secret already exists, you can skip this script, start with deployFalcon.yaml and leave the "Falcon API Credentials" fields blank.
+  # You can also create the secret separately using ./storeSecrets.yaml template
+
+# Check shell outputs and CloudFormation stack status to confirm that all commands complete successfully.
 
 env_up(){
 # EnvHash=$(LC_ALL=C tr -dc a-z0-9 </dev/urandom | head -c 5)
@@ -64,23 +79,22 @@ fi
 
 rm tmpsecret.json
 
-   echo
-   echo "Deploying Falcon protection and demo resources to AWS lab environment...$NC"
-   response=$(aws cloudformation create-stack --stack-name $StackName --template-url https://${tmpS3Bucket}.s3.amazonaws.com/${S3Prefix}/${TemplateName} --region $AWS_REGION --disable-rollback \
-   --capabilities CAPABILITY_NAMED_IAM CAPABILITY_IAM CAPABILITY_AUTO_EXPAND \
-   --parameters \
-   ParameterKey=DeployCSPM,ParameterValue=$CSPMDeploy \
-   ParameterKey=DeployCSPMSampleDetections,ParameterValue=$IOAIOMDeploy)
+echo " "
+response=$(aws cloudformation create-stack --stack-name $StackName --template-url https://${tmpS3Bucket}.s3.amazonaws.com/${S3Prefix}/${TemplateName} --region $AWS_REGION --disable-rollback \
+--capabilities CAPABILITY_NAMED_IAM CAPABILITY_IAM CAPABILITY_AUTO_EXPAND \
+--parameters \
+ParameterKey=DeployCSPM,ParameterValue=$CSPMDeploy \
+ParameterKey=DeployCSPMSampleDetections,ParameterValue=$IOAIOMDeploy)
 
-echo $NC$response
-
-echo $NC $response 
+# echo $response 
 if [[ "$response" == *"StackId"* ]]
 then
-echo "The Cloudformation stack will take 20-30 minutes to complete.$NC"
-echo "\n\nCheck the status at any time with the command \n\naws cloudformation describe-stacks --stack-name $StackName --region $AWS_REGION$NC\n\n"
+echo "The Cloudformation stack will take 20-30 minutes to complete"
+echo " "
+echo "Check the status at any time with the command \n\naws cloudformation describe-stacks --stack-name $StackName --region $AWS_REGION"
 else
 echo "Stack creation failed. Check CloudFormation logs for details, or try:"
+echo " "
 echo "cloudformation describe-stacks --stack-name $StackName --region $AWS_REGION}"
 fi
  
