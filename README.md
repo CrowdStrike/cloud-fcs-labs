@@ -1,10 +1,11 @@
-##Falcon Cloud Security Workshop project##
+## Falcon Cloud Security Workshop project ##
 
-###Overview:###
+### Overview: ###
 
 Falcon Cloud Security (FCS) Lab provides CloudFormation templates that build a foundational AWS environment for testing FCS deployment mechanisms, and for launching a Metasploit-based attack against vulnerable systems. When both sets of stacks are deployed together, the builder has a representative example of Falcon Cloud Security components include agent-based runtime protection, agentless/API-driven IoA/IoM detection, and pre-runtime image scanning. The provisioning has been divided into two sets of nested stacks:
 
-**deployInfra:**
+**1) deployInfra stack:**
+
 This set of nested stacks builds the following resources:
 * an EKS cluster with a managed nodegroups and IRSA roles for subsequent pod access roles
 * a Linux Bastion host for managing the EKS environment 
@@ -19,7 +20,7 @@ This set of nested stacks builds the following resources:
 
 ***Note:*** There are no prerequisites for building the deployInfra stack beyond an AWS account and an IAM role with adequate permissions. AWS service costs will apply for running services.
 
-**deployFalcon:**
+**2) deployFalcon stack:**
 This set of nested stacks deploys Falcon Cloud Security components and requires an active Falcon platform license. Before you start, you will need to create an API Client ID and Secret in the Falcon console with the following scopes. Some additional scopes have been added to support additional/optional components. Store your API Secret in a safe place. You will also need your Falcon CID with offset hash, and the Falcon cloud region (typically, us-1, us-2, or eu-1). For us-1, the URL for generating API keys is located at https://falcon.crowdstrike.com/support/api-clients-and-keys.
 
 AWS Accounts:R"
@@ -47,10 +48,10 @@ The following resources are provisioned by the deployFalcon stacks:
 * EventBridge rules and CloudTrail created to send telemetry stream to Falcon platform.
 * Miscellaneous IAM roles
 
-***Tools:***
+**Tools:**
 Tools are provided to assist with tasks such as streamlined stack deployment, spot creation of parameters and secrets, and comprehension stack resource deletion. Refer to toolsManifest.txt for details 
 
-###Getting Started###
+### Getting Started ###
 
 Start by logging into your AWS account with a role and policies to support deployment of all services mentioned above. Use the CloudFormation service and/or CloudShell to take action. Note: this process is intended to run in AWS region **us-east-1**.
 
