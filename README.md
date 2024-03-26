@@ -1,4 +1,4 @@
-## Falcon Cloud Security Workshop project ##
+## Falcon Cloud Security Lab ##
 
 ### Overview: ###
 
