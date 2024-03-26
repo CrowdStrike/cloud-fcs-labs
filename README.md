@@ -56,29 +56,31 @@ Tools are provided to assist with tasks such as streamlined stack deployment, sp
 Start by logging into your AWS account with a role and policies to support deployment of all services mentioned above. Use the CloudFormation service and/or CloudShell to take action. Note: this process is intended to run in AWS region **us-east-1**.
 
 1. Clone the GitHub repo (or unzip cloud-fcs-labs.zip) to a directory on your machine. Configure AWS CLI credentials sufficient to create an S3 bucket and build infrastructure through CloudFormation. You could also run everything from AWS CloudShell to avoid configuring AWS credentials locally.
-````
+```
 git clone https://github.com/CrowdStrike/cloud-fcs-labs.git  
-````
+```
 2. From a bash shell, change to the "tools" subdirectory of the unzipped archive. 
-````
+```
 cd cloud-fcs-labs/tools
-````
+```
 3. Run the following command to make the scripts executable.
-````
+```
 chmod +x *.sh 
 ````
 4. Launch the deployInfra stacks. No parameter inputs are required. Build time is about 20 min.
 ```
 ./startDeployInfra.sh
 ``` 
+
     a. A set of 7 nested stacks are deployed in addition to the parent 'fcslab-infrastack'.
     b. A set of 5 more standalone 'eksctl' stacks are launched from the EKSCodeBuild stack including EKS Cluster, EKS nodegroup, and 3 EKS IAMserviceaccount stacks. When deleting the FCS Workshop, these 5 stacks must be deleted separately. (This is handled seamlessly by using the ./tools/StackCleanup.sh script).
 5. Get a cup of coffee, generate Falcon API keys, etc.
 6. After all deployInfra stacks complete successfully, you can launch the deployFalcon stacks.
 7. Starting from inside the 'tools' subdirectory directory, launch the deployFalcon stacks. Total build time is about 15 minutes, including the CodeBuild jobs which take some additional time after the CloudFormation stacks complete.
-````
+```
 ./startDeployFalcon.sh
-````
+```
+
     - Enter the following Falcon credential values when prompted:
         - Falcon CID
         - Falcon API Client ID
@@ -96,12 +98,12 @@ chmod +x *.sh
     b. Start the stack deletion script from Bastion Host as follows:
         - Use Session Manager Connect to login to the Linux Bastion
         - At the shell prompt, run these commands:
-````   
+```
 tmpS3Bucket=$(aws ssm get-parameter --name psS3Bucket --region=us-east-1 --query 'Parameter.Value' --output text)
 aws s3 cp s3://${tmpS3Bucket}/tools/StackCleanup.sh .
 chmod +x StackCleanup.sh
 ./StackCleanup.sh
-````
+```
         
 
 
