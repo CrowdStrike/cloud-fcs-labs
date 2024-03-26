@@ -68,9 +68,9 @@ cd cloud-fcs-labs/tools
 chmod +x *.sh 
 ````
 4. Launch the deployInfra stacks. No parameter inputs are required. Build time is about 20 min.
-````
+```
 ./startDeployInfra.sh
-````    
+``` 
     a. A set of 7 nested stacks are deployed in addition to the parent 'fcslab-infrastack'.
     b. A set of 5 more standalone 'eksctl' stacks are launched from the EKSCodeBuild stack including EKS Cluster, EKS nodegroup, and 3 EKS IAMserviceaccount stacks. When deleting the FCS Workshop, these 5 stacks must be deleted separately. (This is handled seamlessly by using the ./tools/StackCleanup.sh script).
 5. Get a cup of coffee, generate Falcon API keys, etc.
