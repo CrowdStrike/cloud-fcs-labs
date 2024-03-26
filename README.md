@@ -85,12 +85,12 @@ Start by logging into your AWS account with a role and policies to support deplo
     b. Start the stack deletion script from Bastion Host as follows:
         - Use Session Manager Connect to login to the Linux Bastion
         - At the shell prompt, run these commands:
-        ```
-            tmpS3Bucket=$(aws ssm get-parameter --name psS3Bucket --region=us-east-1 --query 'Parameter.Value' --output text)
-            aws s3 cp s3://${tmpS3Bucket}/tools/StackCleanup.sh .
-            chmod +x StackCleanup.sh
-            ./StackCleanup.sh
-        ```
+````   
+tmpS3Bucket=$(aws ssm get-parameter --name psS3Bucket --region=us-east-1 --query 'Parameter.Value' --output text)
+aws s3 cp s3://${tmpS3Bucket}/tools/StackCleanup.sh .
+chmod +x StackCleanup.sh
+./StackCleanup.sh
+````
         
 
 
