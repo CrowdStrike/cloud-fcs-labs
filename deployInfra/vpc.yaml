@@ -57,6 +57,14 @@ Parameters:
 #   PermissionsBoundary: !Not [ !Equals [ !Ref PermissionsBoundary, '' ] ]
 
 Resources:
+  VPCIdParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: set psVpcId parameter for stack deletion cleanup
+      Name: !Sub 'psVpcId-${EnvHash}'
+      Type: String
+      Value: !Ref VPC
+      
   InternetGateway:
     Type: AWS::EC2::InternetGateway
     Properties:

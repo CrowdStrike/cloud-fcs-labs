@@ -90,11 +90,13 @@ ParameterKey=DeployCSPMSampleDetections,ParameterValue=$IOAIOMDeploy)
 if [[ "$response" == *"StackId"* ]]
 then
 echo "The Cloudformation stack will take 20-30 minutes to complete"
-echo " "
-echo "Check the status at any time with the command \n\naws cloudformation describe-stacks --stack-name $StackName --region $AWS_REGION"
+echo 
+echo "Check the status at any time with the command"
+echo 
+echo "aws cloudformation describe-stacks --stack-name $StackName --region $AWS_REGION"
 else
 echo "Stack creation failed. Check CloudFormation logs for details, or try:"
-echo " "
+echo 
 echo "cloudformation describe-stacks --stack-name $StackName --region $AWS_REGION}"
 fi
  
