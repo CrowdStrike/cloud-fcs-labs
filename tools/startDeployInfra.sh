@@ -6,7 +6,8 @@
 # This will generate a consistent hash value for deployed stacks, copy templates to a new S3 bucket, write parameters, and start the build.
 # Check shell outputs and CloudFormation stack status to confirm that all commands complete successfully.
 
-# git clone https://github.com/CrowdStrike/cloud-fcs-labs.git  #NOT APPLICABLE, here for reference.
+# Easiest way to get the files onto your machine
+# git clone https://github.com/CrowdStrike/cloud-fcs-labs.git  
 # cd cloud-fcs-labs/tools/
 
 env_up(){
