@@ -40,15 +40,19 @@ response=$(aws cloudformation create-stack --stack-name $StackName --template-ur
 #echo $response 
 if [[ "$response" == *"StackId"* ]]
 then
+echo
 echo "The Cloudformation stack will take 20-30 minutes to complete."
 echo 
 echo "Check the status at any time with the command"
 echo 
 echo "aws cloudformation describe-stacks --stack-name $StackName --region $AWS_REGION"
+echo
 else
+echo
 echo "Stack creation failed. Check CloudFormation logs for details, or try:"
 echo 
 echo "cloudformation describe-stacks --stack-name $StackName --region $AWS_REGION}"
+echo
 fi
 
 }

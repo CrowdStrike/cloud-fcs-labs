@@ -3,10 +3,6 @@ AWSTemplateFormatVersion: '2010-09-09'
 Description: 'Main template for base infrastructure stack supporting the Falcon Cloud Security Lab.  Creates an EKS cluster via eksctl and CodeBuild job, a Metasploit attacker instance, and other good stuff.'
 
 Parameters:
-
-  EnvAlias:
-    Type: String
-    Default: 'fcs-lab'
   psEnvHash:
     Type: AWS::SSM::Parameter::Value<String>
     Default: psEnvHash
@@ -70,7 +66,6 @@ Resources:
     Properties:
       TemplateURL: !If [UseS3BucketInput, !Sub 'https://${S3BucketInput}.s3.amazonaws.com/${S3Prefix}/iam.yaml', !Sub 'https://${psS3Bucket}.s3.amazonaws.com/${S3Prefix}/iam.yaml']
       Parameters:
-        EnvAlias: !Ref EnvAlias
         EnvHash: !If [UseEnvHashInput, !Ref EnvHashInput, !Ref psEnvHash]
         S3Bucket: !If [UseS3BucketInput, !Ref S3BucketInput, !Ref psS3Bucket]
         # PermissionsBoundary: !Ref PermissionsBoundary
@@ -81,7 +76,6 @@ Resources:
     Properties:
       TemplateURL: !If [UseS3BucketInput, !Sub 'https://${S3BucketInput}.s3.amazonaws.com/${S3Prefix}/vpc.yaml', !Sub 'https://${psS3Bucket}.s3.amazonaws.com/${S3Prefix}/vpc.yaml']
       Parameters:
-        EnvAlias: !Ref EnvAlias
         EnvHash: !If [UseEnvHashInput, !Ref EnvHashInput, !Ref psEnvHash]
         S3Bucket: !If [UseS3BucketInput, !Ref S3BucketInput, !Ref psS3Bucket]
         EKSClusterName: !Ref EKSClusterName
@@ -93,7 +87,6 @@ Resources:
       Properties:
         TemplateURL: !If [UseS3BucketInput, !Sub 'https://${S3BucketInput}.s3.amazonaws.com/${S3Prefix}/eksCodeBuild.yaml', !Sub 'https://${psS3Bucket}.s3.amazonaws.com/${S3Prefix}/eksCodeBuild.yaml']
         Parameters:
-          EnvAlias: !Ref EnvAlias
           EnvHash: !If [UseEnvHashInput, !Ref EnvHashInput, !Ref psEnvHash]
           EKSClusterName: !Ref EKSClusterName
           KubernetesVersion: !Ref KubernetesVersion
@@ -111,7 +104,6 @@ Resources:
     Properties:
       TemplateURL: !If [UseS3BucketInput, !Sub 'https://${S3BucketInput}.s3.amazonaws.com/${S3Prefix}/bastion.yaml', !Sub 'https://${psS3Bucket}.s3.amazonaws.com/${S3Prefix}/bastion.yaml']
       Parameters:
-        EnvAlias: !Ref EnvAlias
         EnvHash: !If [UseEnvHashInput, !Ref EnvHashInput, !Ref psEnvHash]
         S3Bucket: !If [UseS3BucketInput, !Ref S3BucketInput, !Ref psS3Bucket]
         S3Prefix: !Ref S3Prefix
@@ -126,7 +118,6 @@ Resources:
     Properties:
       TemplateURL: !If [UseS3BucketInput, !Sub 'https://${S3BucketInput}.s3.amazonaws.com/${S3Prefix}/metasploit.yaml', !Sub 'https://${psS3Bucket}.s3.amazonaws.com/${S3Prefix}/metasploit.yaml']
       Parameters:
-        EnvAlias: !Ref EnvAlias
         EnvHash: !If [UseEnvHashInput, !Ref EnvHashInput, !Ref psEnvHash]
         S3Bucket: !If [UseS3BucketInput, !Ref S3BucketInput, !Ref psS3Bucket]
         S3Prefix: !Ref S3Prefix
@@ -142,7 +133,6 @@ Resources:
     Properties:
       TemplateURL: !If [UseS3BucketInput, !Sub 'https://${S3BucketInput}.s3.amazonaws.com/${S3Prefix}/vulBucket.yaml', !Sub 'https://${psS3Bucket}.s3.amazonaws.com/${S3Prefix}/vulBucket.yaml']
       Parameters:
-        EnvAlias: !Ref EnvAlias
         EnvHash: !If [UseEnvHashInput, !Ref EnvHashInput, !Ref psEnvHash]
         S3Bucket: !If [UseS3BucketInput, !Ref S3BucketInput, !Ref psS3Bucket]
         S3Prefix: !Ref S3Prefix

@@ -66,7 +66,7 @@ cat <<EOF > tmpsecret.json
 }
 EOF
 
-tmpFalconSecret=$(aws secretsmanager list-secrets --query 'SecretList[].Name[]' --output text | grep crowdstrike-falcon-api)
+tmpFalconSecret=$(aws secretsmanager list-secrets --query 'SecretList[?Name==`crowdstrike-falcon-api`].Name' --output text)
 if [[ "$tmpFalconSecret" == 'crowdstrike-falcon-api' ]] 
 then
   aws secretsmanager put-secret-value --secret-id crowdstrike-falcon-api --secret-string file://tmpsecret.json

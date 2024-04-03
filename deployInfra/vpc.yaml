@@ -3,9 +3,6 @@ AWSTemplateFormatVersion: '2010-09-09'
 Description: 'Creates a VPC for the EKS Cluster'
 
 Parameters:
-  EnvAlias:
-    Type: String
-    Default: ''
   EnvHash:
     Type: String
     Default: ''

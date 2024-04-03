@@ -15,9 +15,6 @@ Parameters:
     Description: Worker Node cluster instances
     Type: String
     Default: m5.large
-  EnvAlias:
-    Type: String
-    Default: ''
   EnvHash:
     Type: String
     Default: ''

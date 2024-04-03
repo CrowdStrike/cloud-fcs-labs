@@ -2,9 +2,6 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Description: 'Creates a CI/CD pipeline for the vulnerable app.'
 Parameters:
-  EnvAlias:
-    Type: String
-    Default: 'fcs-lab'
   EnvHash:
     Type: String
     Default: ''

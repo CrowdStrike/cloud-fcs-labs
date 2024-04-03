@@ -9,9 +9,6 @@ Parameters:
   S3Prefix:
     Type: String
     Default: ''
-  EnvAlias:
-    Type: String
-    Default: ''
   EnvHash:
     Type: String
     Default: ''

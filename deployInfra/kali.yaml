@@ -2,9 +2,6 @@ AWSTemplateFormatVersion: '2010-09-09'
 Description: This template creates the a VPC for an isolated testing environment. It will deploy a Kali (attacker) instance running in a dedicated vpc. Access to the Victim application is only available via its public addresses.
 
 Parameters:
-  EnvAlias:
-    Type: String
-    Default: ''
   EnvHash:
     Type: String
     Default: ''
