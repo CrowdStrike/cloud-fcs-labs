@@ -51,10 +51,10 @@ aws ecr delete-repository --repository-name falcon-kac --force
 aws ecr delete-repository --repository-name falcon-sensor --force
 
 # Replace with deletion of ELBv and Target groups
-loadBalancerArn=$(aws elbv2 describe-load-balancers --query 'LoadBalancers[].LoadBalancerArn[]' --output text | grep k8s-default-webappin)
+loadBalancerArn=$(aws elbv2 describe-load-balancers --query 'LoadBalancers[].[LoadBalancerArn]' --output text | grep k8s-default-webappin)
 aws elbv2 delete-load-balancer --load-balancer-arn $loadBalancerArn
 sleep 30
-targetGroupArn=$(aws elbv2 describe-target-groups --query 'TargetGroups[].TargetGroupArn[]' --output text | grep k8s-default-webapp)
+targetGroupArn=$(aws elbv2 describe-target-groups --query 'TargetGroups[].[TargetGroupArn]' --output text | grep k8s-default-webapp)
 aws elbv2 delete-target-group --target-group-arn $targetGroupArn
 arSecurityGroups=$(aws ec2 get-security-groups-for-vpc --vpc-id $VpcId --filter Name=tag:elbv2.k8s.aws/cluster,Values=fcs-lab --query 'SecurityGroupForVpcs[].GroupId' --output text)
 for s in ${arSecurityGroups[@]}; do
