@@ -71,9 +71,8 @@ if [[ "$tmpFalconSecret" == 'crowdstrike-falcon-api' ]]
 then
   aws secretsmanager put-secret-value --secret-id crowdstrike-falcon-api --secret-string file://tmpsecret.json
 else
-  aws secretsmanager create-secret --name crowdstrike-falcon-api
+  FalconSecretArn=$(aws secretsmanager create-secret --name crowdstrike-falcon-api --query 'ARN' --output text) 
   aws secretsmanager put-secret-value --secret-id crowdstrike-falcon-api --secret-string file://tmpsecret.json 
-  FalconSecretArn=$(aws secretsmanager list-secrets --query 'SecretList[].ARN[]' --output text --region $AWS_REGION | grep crowdstrike-falcon-api)
   aws ssm put-parameter --name=psFalconSecretArn --value="${FalconSecretArn}" --region=$AWS_REGION --type=String --overwrite 
 fi
 
