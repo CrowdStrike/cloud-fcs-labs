@@ -43,3 +43,9 @@ fi
 rm tmpsecret.json
 
 echo "AWS Secrets Manager secret $tmpFalconSecret updated."
+
+echo "Re-run failed build jobs from CodePipeline. Select the pipeline and click 'Release Change' to trigger the job".
+echo
+echo "The 'sensor-import-pipeline' triggers the 'sensor-image-import' and 'falcon-eks-deploy' build jobs."
+echo "The 'webapp-deploy-pipeline' triggers the 'webapp-image-build' and 'webapp-eks-deploy' build jobs."
+echo
