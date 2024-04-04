@@ -11,15 +11,17 @@ k8s_cleanup(){
 
 echo "Deleting Kubernetes protection components on EKS..."
 
-# note: deleting the falcon-operator (below) hangs. You can just leave it if you prefer.
-kubectl delete -f https://github.com/CrowdStrike/falcon-operator/releases/latest/download/falcon-operator.yaml --force
-kubectl delete daemonset falcon-node-sensor -n falcon-system
+# Run this block to cleanup Falcon protection components prior to running the 'sensor-import-pipeline' CodePipeline job
+kubectl delete falconnodesensors -A --all
+kubectl delete falconcontainers --all
+kubectl delete falconadmission --all
+kubectl delete -f https://github.com/CrowdStrike/falcon-operator/releases/latest/download/falcon-operator.yaml
+helm uninstall falcon-kac -n falcon-kac
 
-# # Delete k8s ingress and AWS load balancer controller to simplify stack cleanup
+# Run this block after removing falcon components, to refresh the cluster and prep for Infra stack cleanup
 kubectl delete ingress webapp-ingress
 helm uninstall aws-load-balancer-controller -n kube-system
 helm repo remove eks
-helm uninstall falcon-kac -n falcon-kac
 # kubectl delete sa aws-load-balancer-controller -n kube-system
 kubectl delete deployment webapp
 
