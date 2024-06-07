@@ -39,9 +39,7 @@ def lambda_handler(event, context):
     logger.info('Got event {}'.format(event))
     logger.info('Context {}'.format(context))
 
-    if event['RequestType'] in ['Create']:
-        cfnresponse_send(event, context, 'SUCCESS', response['body'], "CustomResourcePhysicalID")
-    elif event['RequestType'] in ['Delete']:
+    if event['RequestType'] in ['Delete']:
 
         # Set AWS region and get parameters
         region = 'us-east-1'
@@ -89,4 +87,7 @@ def lambda_handler(event, context):
         cfn.delete_stack(StackName = FalconStack)
 
         response = {}
+        cfnresponse_send(event, 'SUCCESS', response, "CustomResourcePhysicalID")
+        
+    else:
         cfnresponse_send(event, 'SUCCESS', response, "CustomResourcePhysicalID")
