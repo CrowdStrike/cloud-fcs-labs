@@ -162,7 +162,7 @@ Resources:
         CrowdStrikeCloud: !If [UseInputSecret, !Ref CrowdStrikeCloud, "{{resolve:secretsmanager:crowdstrike-falcon-api:SecretString:CSCloud}}"]
         S3Prefix: !Ref S3Prefix
         S3CodeBucketKey: code.zip
-        EKSCodeBuildServiceRoleArn: !Sub arn:aws:iam::${AWS::AccountId}:role/fcsworkshop-admin 
+        EKSCodeBuildServiceRoleArn: !If [UseEnvHashInput, !Sub 'arn:aws:iam::${AWS::AccountId}:role/fcsworkshop-admin-${EnvHashInput}', !Sub 'arn:aws:iam::${AWS::AccountId}:role/fcsworkshop-admin-${psEnvHash}']
         EKSClusterName: !Ref EKSClusterName
         PodS3AccessRoleArn: !Sub arn:aws:iam::${AWS::AccountId}:role/fcs-lab-pod-s3-access
         # PermissionsBoundary: !Ref PermissionsBoundary

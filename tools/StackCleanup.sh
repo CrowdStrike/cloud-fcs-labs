@@ -43,7 +43,6 @@ S3Bucket=$(aws ssm get-parameter --name "psS3Bucket" --query 'Parameter.Value' -
 FalconStack=$(aws ssm get-parameter --name "psFalconStack-$EnvHash" --query 'Parameter.Value' --output text --region=$AWS_REGION)
 CodePipelineBucket=$(aws ssm get-parameter --name "psCodePipelineBucket-$EnvHash" --query 'Parameter.Value' --output text --region=$AWS_REGION)
 TrailBucket=$(aws ssm get-parameter --name "psTrailBucket-$EnvHash" --query 'Parameter.Value' --output text --region=$AWS_REGION)
-VpcId=$(aws ssm get-parameter --name "psVpcId-$EnvHash" --query 'Parameter.Value' --output text --region=$AWS_REGION)
 
 ## Run from the Bastion Host! 
 ## You can run the entire script at once if you want to delete all FCS-lab stacks, or you can run deployFalcon section separately.
@@ -58,10 +57,6 @@ aws elbv2 delete-load-balancer --load-balancer-arn $loadBalancerArn
 sleep 30
 targetGroupArn=$(aws elbv2 describe-target-groups --query 'TargetGroups[].[TargetGroupArn]' --output text | grep k8s-default-webapp)
 aws elbv2 delete-target-group --target-group-arn $targetGroupArn
-arSecurityGroups=$(aws ec2 get-security-groups-for-vpc --vpc-id $VpcId --filter Name=tag:elbv2.k8s.aws/cluster,Values=fcs-lab --query 'SecurityGroupForVpcs[].GroupId' --output text)
-for s in ${arSecurityGroups[@]}; do
-  aws ec2 delete-security-group --group-id $s
-done
 
 # StackSet instance deletion
 accountId=$(aws sts get-caller-identity --query Account --output text)
@@ -103,6 +98,7 @@ EnvHash=$(aws ssm get-parameter --name "psEnvHash" --query 'Parameter.Value' --o
 S3Bucket=$(aws ssm get-parameter --name "psS3Bucket" --query 'Parameter.Value' --output text --region=$AWS_REGION)
 LoggingBucket=$(aws ssm get-parameter --name "psLoggingBucket-$EnvHash" --query 'Parameter.Value' --output text --region=$AWS_REGION)
 InfraStack=$(aws ssm get-parameter --name "psInfraStack-$EnvHash" --query 'Parameter.Value' --output text --region=$AWS_REGION)
+VpcId=$(aws ssm get-parameter --name "psVpcId-$EnvHash" --query 'Parameter.Value' --output text --region=$AWS_REGION)
 
 # Delete eksctl stacks 
 aws cloudformation delete-stack --stack-name eksctl-fcs-lab-addon-iamserviceaccount-kube-system-aws-load-balancer-controller
@@ -126,6 +122,10 @@ aws cloudformation delete-stack --stack-name "eksctl-fcs-lab-cluster"
 while [ "$(aws cloudformation describe-stacks --stack-name eksctl-fcs-lab-cluster --query 'Stacks[].StackStatus' --output text)" = "DELETE_IN_PROGRESS" ]; do 
   echo "Waiting for eksctl-fcs-lab-cluster stack to delete"   
   sleep 30
+done
+arSecurityGroups=$(aws ec2 get-security-groups-for-vpc --vpc-id $VpcId --filter Name=tag:elbv2.k8s.aws/cluster,Values=fcs-lab --query 'SecurityGroupForVpcs[].GroupId' --output text)
+for s in ${arSecurityGroups[@]}; do
+  aws ec2 delete-security-group --group-id $s
 done
 
 # S3 bucket empyting and deletion. 

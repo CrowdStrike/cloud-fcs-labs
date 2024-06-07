@@ -162,7 +162,7 @@ Resources:
   FCSWorkshopRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: fcsworkshop-admin
+      RoleName: !Sub fcsworkshop-admin-${EnvHash}
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement:
@@ -183,7 +183,7 @@ Resources:
     Properties:
       Path: /
       Roles:
-        - fcsworkshop-admin
+        - !Sub fcsworkshop-admin-${EnvHash}
 
 # #
   # # Enable GD in this region only

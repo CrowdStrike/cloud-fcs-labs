@@ -106,7 +106,7 @@ Resources:
             touch /home/ssm-user/.bashrc
             echo "export AWS_REGION=${AWS::Region}" | tee -a /home/ssm-user/.bashrc
             echo "export AWS_DEFAULT_REGION=${AWS::Region}" | tee -a /home/ssm-user/.bashrc
-            echo "export PS1='\[\u@bastion\w\]$'" | tee -a /home/ssm-user/.bashrc
+            echo "export PS1=export PS1='\e[0;33m\u@bastion\w\]\$\e[m'" | tee -a /home/ssm-user/.bashrc
             echo "alias k=kubectl"  | tee -a /home/ssm-user/.bashrc
             echo "cd ~" >> /home/ssm-user/.bashrc
             #get and run setup 
