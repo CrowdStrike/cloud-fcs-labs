@@ -7,8 +7,7 @@ spec:
     client_id: FALCON_CLIENT_ID
     client_secret: FALCON_CLIENT_SECRET
     cloud_region: autodiscover
-  node: 
-    image: REPO_URI
+  node: {}
   falcon:
     tags: 
     - fcs-lab
