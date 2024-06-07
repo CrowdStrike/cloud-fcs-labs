@@ -86,8 +86,9 @@ def lambda_handler(event, context):
         cfn = boto3.client('cloudformation')
         cfn.delete_stack(StackName = FalconStack)
 
-        response = {}
+        response = {'Status': 'Complete'}
         cfnresponse_send(event, 'SUCCESS', response, "CustomResourcePhysicalID")
-        
+
     else:
+        response = {'Status': 'Complete'}
         cfnresponse_send(event, 'SUCCESS', response, "CustomResourcePhysicalID")
