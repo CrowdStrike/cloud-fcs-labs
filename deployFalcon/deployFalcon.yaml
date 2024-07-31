@@ -139,14 +139,6 @@ Resources:
       Name: !If [UseEnvHashInput, !Sub 'psFalconStack-${EnvHashInput}', !Sub 'psFalconStack-${psEnvHash}']
       Type: String
       Value: !Ref "AWS::StackName"
-
-  FalconStackParameter:
-    Type: AWS::SSM::Parameter
-    Properties:
-      Description: set psFalconStack parameter for stack deletion cleanup
-      Name: !If [UseEnvHashInput, !Sub 'psFalconStack-${EnvHashInput}', !Sub 'psFalconStack-${psEnvHash}']
-      Type: String
-      Value: !Ref "AWS::StackName"
   
   CodePipelineStack:
     Type: AWS::CloudFormation::Stack
@@ -229,11 +221,8 @@ Resources:
     Type: AWS::Lambda::Function
     DependsOn:
       - FalconStackParameter
-      - FalconStackParameter
       - CodePipelineStack
-      - CSPMSetup
       - WAFRules
-      - IOAIOMSetup
     Properties:
       Handler: lambda_function.lambda_handler
       MemorySize: 128
