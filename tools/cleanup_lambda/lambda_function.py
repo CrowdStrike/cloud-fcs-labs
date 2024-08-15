@@ -12,6 +12,10 @@ logger.setLevel(logging.INFO)
 SUCCESS = "SUCCESS"
 
 
+class StackDeleteException(Exception):
+    pass
+
+
 def cfnresponse_send(event, responseStatus, responseData, physicalResourceId=None, noEcho=False):
     responseUrl = event["ResponseURL"]
     print(responseUrl)
@@ -68,7 +72,7 @@ def delete_stack(stack_name):
     if stack_exists(stack_name):
         cf_client.delete_stack(StackName=stack_name)
 
-        # check eksctl-fcs-lab-nodegroup-ng-1 stack delete status
+        # check stack delete status
         stack_status = get_stack_status(stack_name)
 
         while stack_status != "DELETE_COMPLETE":
