@@ -88,7 +88,7 @@ https://www.exploit-db.com/exploits/43008
 
 The output is the first few lines of an attack script that you will use with the Metasploit Framework tool already deployed on Kali. In fact, the contributors to Kali simplify the process by preloading a long list of exploit scripts. When we launch the attack in the next section, we’ll already have what we need.
 
-**4. View the module on Kali**
+4. View the module on Kali
 
 ```
 head /opt/metasploit-framework/embedded/framework/modules/exploits/multi/http/tomcat_jsp_upload_bypass.rb -n 24

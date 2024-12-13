@@ -28,7 +28,7 @@ Check for a bucket logging policy
 aws s3api get-bucket-logging --bucket $TARGET_BUCKET
 ```
 
-[Bucket logging configuration](lab4-1.png)
+![Bucket logging configuration](lab4-1.png)
 
 > [!NOTE]
 > If your Metasploit session closes unexpectedly, type “run -j” at the metasploit console prompt to reconnect to the target.

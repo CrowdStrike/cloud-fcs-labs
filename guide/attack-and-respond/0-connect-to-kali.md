@@ -6,7 +6,7 @@ Throughout the lab, you will interact with the AWS Management Console, the AWS C
 
    1. Connect to the Bastion EC2 instance: [Bastion EC2 Instance](https://us-east-1.console.aws.amazon.com/ec2/home?region=us-east-1#Instances:tag:Name=LinuxBastion)
    1. Select the checkbox next to LinuxBastion
-   1. Click “Connect” on the top navigation bar, and then select Session Manager, click the orange “Connect” button.
+   1. Click “Connect” on the top navigation bar, and then select `Session Manager`, click the orange “Connect” button.
    1. You are connected to the Bastion instance!
    1. Execute below command to view all the pods running
       ```
@@ -20,7 +20,7 @@ Throughout the lab, you will interact with the AWS Management Console, the AWS C
 
    1. Connect to the Kali EC2 instance: [Kali EC2 Instance](https://us-east-1.console.aws.amazon.com/ec2/home?region=us-east-1#Instances:tag:Name=Kali)
    1. Select the checkbox next to “Kali”
-   1. Click “Connect” on the top navigation bar, and then select Session Manager, click the orange “Connect” button.
+   1. Click “Connect” on the top navigation bar, and then select `Session Manager`, click the orange “Connect” button.
    1. You are connected to the Kali instance!
 
    ![Screenshot of the Kali shell](kali.png)

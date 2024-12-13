@@ -106,7 +106,7 @@ In addition to the included global IOAs, there is also an option to create custo
 
 Given that we know that our application exposes the risk of lateral movement if the container is breached we can create a custom IOA that will alert and block on any invocation of the AWS CLI.
 
-_Investigate Process Activity_
+**_Investigate Process Activity_**
 
 Click on Investigate > Events
 
@@ -120,7 +120,7 @@ event_platform=Lin FileName="aws"
 
 ![](lab5-18.png)
 
-_Creating the Custom IOA Rule Group_
+**_Creating the Custom IOA Rule Group_**
 
 Using the drop-down menu (Menu icon, upper left-hand corner), select Endpoint Security > Configure > Custom IOA Rule Groups.
 
@@ -146,7 +146,7 @@ Then, at the ENABLE RULE GROUP dialog, click the ENABLE RULE GROUP button
 
 ![](lab5-22.png)
 
-_Creating the rule to detect a lateral movement Indicator of Attack_
+**_Creating the rule to detect a lateral movement Indicator of Attack_**
 
 On the same page, we can create and enable the Custom IOA rule to block lateral movement to S3. In this case, we only want to prevent commands to AWS that are executed via dash (a lightweight Debian shell).
 
@@ -180,7 +180,7 @@ Select the checkbox for this new rule, click the Enable button, followed by the 
 
 Our Custom IOA rules are now created and will take effect within 40 minutes.
 
-_Assigning the Prevention Policy_
+**_Assigning the Prevention Policy_**
 
 Finally, we need to assign this Custom IOA Rule Group to a prevention policy.
 

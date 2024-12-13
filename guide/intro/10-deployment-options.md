@@ -23,8 +23,9 @@ ABI encompasses three separate AWS deployment integrations:
 - **Cloud Workload Protection (CWP) for EC2**
 
   - CWP for EC2 uses AWS Systems Manager Distributor to deploy the Falcon sensor on all new EC2 managed instances.
-    > [!NOTE]
-    > There are many supported methods for deploying the Falcon sensor. The use of the SSM Distributor Package is provided as a convenience for customers and works well as part of a CloudFormation stack.
+
+    `Note: There are many supported methods for deploying the Falcon sensor. The use of the SSM Distributor Package is provided as a convenience for customers and works well as part of a CloudFormation stack.`
+
   - This method can also be used to protect ECS clusters in EC2 mode.
 
 - **Cloud Workload Protection (CWP) for EKS**
