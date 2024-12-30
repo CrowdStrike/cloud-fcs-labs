@@ -21,3 +21,15 @@ The first phase CloudFormation build provisions the following components:
 Architectural diagram for the lab scenario
 
 ![AWS architectural diagram of the lab](lab-diagram.svg)
+
+## Additional notes on the lab environment
+
+Building infrastructure in CloudFormation is easy, building complex and secure infrastructure where components tie together is complicated. One benefit of using Infrastructure-as-Code is that the intended result is always documented and incremental improvements are incorporated into future deployments.
+
+**Kali access control:**
+
+Kali is a powerful platform used for penetration testing, white-hat hacking, and probably more nefarious purposes. As such, access should be restricted from external access. In prior versions of this lab, Kali was access over SSH via shared key. In this version, the use of SSM Session Manager Connect simplifies network access control by using IAM and AWS Account access to govern access to Kali (and the Bastion host).
+
+**Vulnerable webapp access control:**
+
+We deploy a vulnerable Tomcat webapp which would typically be open to anonymous internet traffic. We demonstrate how easy it is to find and exploit this vulnerability. This must not be exposed to the internet (especially in the absence of Falcon runtime protection). In this case, AWS Security Groups are used to restrict access so that only Kali can access the vulnerable application, and (aside from SSM Session Manager Connect), only resources egressing through the lab environment’s NAT gateway can access Kali.
