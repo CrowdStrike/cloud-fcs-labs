@@ -22,10 +22,10 @@ kubectl create deployment vulnerable \
   --replicas=1
 ```
 
-![Deployment of vulnerable is blocked](kubectl-create-vulnerable-blocked)
+![Deployment of vulnerable is blocked](kubectl-create-vulnerable-blocked.png)
 
-The response from our admission controller shows two warnings (these are related to our admission
-controller's IOM policies, which are set to alert only) and one error that prevented the deployment
+The response from our admission controller shows two warnings (recall that the `images_prevent` policy
+has two IOM rules set to alert) and one error that prevented the deployment
 due to image assessment. Our policy worked! You can list pods again to confirm that no new deployments
 were created.
 
@@ -45,9 +45,9 @@ kubectl create deployment vulnerable \
   --replicas=1
 ```
 
-![Vulnerable app created](kubectl-create-vulnerable-allowed)
+![Vulnerable app created](kubectl-create-vulnerable-allowed.png)
 
-This time, we see warnings from the `iom_alert_only` policy, but not errors that prevented the deployment.
+This time, we see warnings from the `iom_alert_only` policy, but no errors that prevented the deployment.
 Again, list pods to confirm the deployment succeeded.
 
 We have successfully used the admission controller to block a vulnerable image, then modify its

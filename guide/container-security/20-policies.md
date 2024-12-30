@@ -3,7 +3,7 @@
 In the last section, you saw how the Falcon platform connects to an ECR registry to assess images.
 Now, we need to configure policies based on those assessments to keep our clusters safe.
 
-Navigate to _Policies_ > _Image assessment_. You'll see a few policies created, as well as the _Default_
+Navigate to _Policies_ > _Image assessment_. You'll see a few policies created, as well as the `Default`
 policy, which acts as a fallback if no other policy applies.
 
 ![Image assessment policies](falcon-ia-policies.png)
@@ -21,14 +21,14 @@ multiple types of detections.
 
 Now that we've created an image assessment policy that prevents images with critical detections, we
 need to associate that with a policy for our Kubernetes admission controller. Admission controllers
-allow you to programatically review and allow or deny workload deployments to Kubernetes clusters.
+allow you to programmatically allow or deny workload deployments to Kubernetes clusters.
 Navigate to _Policies_ > _Admission controller_.
 
 ![KAC policy list](falcon-kac-policies.png)
 
 The `iom_alert_only` policy will alert on (but not prevent) images based on indicators of
 misconfiguration (IOM's) in that image. Select the `image_prevent` policy. In this policy, we have
-disabled most IOM rules, since those will be handled by `iom_alert_only`.
+disabled all but two IOM rules, since we want most IOM's to be handled by `iom_alert_only`.
 
 ![image_prevent IOM configuration](falcon-kac-ioms.png)
 
