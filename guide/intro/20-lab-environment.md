@@ -28,7 +28,7 @@ Building infrastructure in CloudFormation is easy, building complex and secure i
 
 **Kali access control:**
 
-Kali is a powerful platform used for penetration testing, white-hat hacking, and probably more nefarious purposes. As such, access should be restricted from external access. In prior versions of this lab, Kali was access over SSH via shared key. In this version, the use of SSM Session Manager Connect simplifies network access control by using IAM and AWS Account access to govern access to Kali (and the Bastion host).
+Kali is a powerful platform used for penetration testing, white-hat hacking, and probably more nefarious purposes. As such, access should be restricted from external access. In this lab, SSM Session Manager Connect simplifies network access control by using IAM and AWS Account access to govern access to Kali (and the Bastion host).
 
 **Vulnerable webapp access control:**
 

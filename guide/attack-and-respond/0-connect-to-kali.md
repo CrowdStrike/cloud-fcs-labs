@@ -16,7 +16,7 @@ Throughout the lab, you will interact with the AWS Management Console, the AWS C
 
 2. **Access Kali Instance**
 
-   Kali Linux (formerly known as BackTrack Linux) is an open-source, Debian-based Linux distribution aimed at advanced Penetration Testing and Security Auditing by providing common tools, configurations, and automations.
+   Kali Linux is an open-source, Debian-based Linux distribution aimed at advanced Penetration Testing and Security Auditing by providing common tools, configurations, and automations.
 
    1. Connect to the Kali EC2 instance: [Kali EC2 Instance](https://us-east-1.console.aws.amazon.com/ec2/home?region=us-east-1#Instances:tag:Name=Kali)
    1. Select the checkbox next to “Kali”
