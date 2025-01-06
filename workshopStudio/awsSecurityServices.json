@@ -1,0 +1,27 @@
+{
+    "AWSTemplateFormatVersion": "2010-09-09",
+    "Description": "reserved for future use",
+    "Parameters": {
+        "EnvAlias": {
+            "Type": "String",
+            "Default": ""
+        },
+        "EnvHash": {
+            "Type": "String",
+            "Default": ""
+        },
+        "S3Bucket": {
+            "Type": "String",
+            "Default": ""
+        }
+    },
+    "Resources": {
+        "GDdetector": {
+            "Type": "AWS::GuardDuty::Detector",
+            "Properties": {
+                "Enable": true,
+                "FindingPublishingFrequency": "FIFTEEN_MINUTES"
+            }
+        }
+    }
+}

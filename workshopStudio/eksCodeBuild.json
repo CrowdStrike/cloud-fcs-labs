@@ -1,0 +1,185 @@
+{
+    "AWSTemplateFormatVersion": "2010-09-09",
+    "Description": "Base stack to create container day resources",
+    "Parameters": {
+        "KubernetesVersion": {
+            "Description": "Kubernetes version",
+            "Type": "String",
+            "Default": "1.28"
+        },
+        "EKSClusterName": {
+            "Description": "Name of EKS Cluster",
+            "Type": "String",
+            "Default": "fcs-lab"
+        },
+        "WorkerNodeInstanceType": {
+            "Description": "Worker Node cluster instances",
+            "Type": "String",
+            "Default": "m5.large"
+        },
+        "EnvAlias": {
+            "Type": "String",
+            "Default": ""
+        },
+        "EnvHash": {
+            "Type": "String",
+            "Default": ""
+        },
+        "VpcId": {
+            "Type": "String"
+        },
+        "SubnetPrivate1": {
+            "Type": "String"
+        },
+        "SubnetPrivate2": {
+            "Type": "String"
+        },
+        "SubnetPublic1": {
+            "Type": "String"
+        },
+        "SubnetPublic2": {
+            "Type": "String"
+        },
+        "FCSRole": {
+            "Type": "String",
+            "Default": ""
+        }
+    },
+    "Resources": {
+        "BuildProject": {
+            "Type": "AWS::CodeBuild::Project",
+            "Properties": {
+                "Name": {
+                    "Fn::Sub": "CodeBuild-${AWS::StackName}"
+                },
+                "ServiceRole": {
+                    "Ref": "FCSRole"
+                },
+                "Artifacts": {
+                    "Type": "NO_ARTIFACTS"
+                },
+                "LogsConfig": {
+                    "CloudWatchLogs": {
+                        "Status": "ENABLED"
+                    }
+                },
+                "Environment": {
+                    "Type": "LINUX_CONTAINER",
+                    "ComputeType": "BUILD_GENERAL1_SMALL",
+                    "Image": "aws/codebuild/amazonlinux2-x86_64-standard:5.0",
+                    "EnvironmentVariables": [
+                        {
+                            "Name": "CFN_RESPONSE_URL",
+                            "Value": {
+                                "Ref": "WaitForStackCreationHandle"
+                            }
+                        }
+                    ]
+                },
+                "Source": {
+                    "Type": "NO_SOURCE",
+                    "BuildSpec": {
+                        "Fn::Sub": "version: 0.2\nphases:\n  install:\n    runtime-versions:\n      python: 3.12\n    commands:\n      - echo \">>> installed python 3.12\"\n  pre_build:\n    commands:\n      - echo \">>> build cluster configs\"\n      - |\n        cat <<EOF > irsa.yaml                            \n        apiVersion: eksctl.io/v1alpha5\n        kind: ClusterConfig\n        metadata:\n          name: ${EKSClusterName}\n          region: ${AWS::Region}\n          version: \"${KubernetesVersion}\"\n        iam:\n          withOIDC: true\n          serviceAccounts:\n          - metadata:\n              name: aws-load-balancer-controller\n              namespace: kube-system\n            wellKnownPolicies:\n              awsLoadBalancerController: true\n            roleName: aws-load-balancer-controller\n          - metadata:\n              name: pod-s3-access\n            roleName: fcs-lab-pod-s3-access\n            attachPolicyARNs:\n            - \"arn:aws:iam::aws:policy/AmazonS3FullAccess\"\n        EOF\n      - |\n        cat <<EOF > nodegroup.yaml\n        apiVersion: eksctl.io/v1alpha5\n        kind: ClusterConfig\n        metadata:\n          name: ${EKSClusterName}\n          region: ${AWS::Region}\n          version: \"${KubernetesVersion}\"\n        managedNodeGroups:\n          - name: ng-1\n            instanceType: ${WorkerNodeInstanceType}\n            desiredCapacity: 2\n            minSize: 2\n            maxSize: 3\n            privateNetworking: true\n            volumeSize: 100\n            volumeType: gp3\n            volumeEncrypted: true\n            disableIMDSv1: false\n            tags:\n              'eks:cluster-name': ${EKSClusterName}\n            iam:\n              withAddonPolicies:\n                autoScaler: true\n                awsLoadBalancerController: true\n                cloudWatch: true\n        EOF\n      - echo \">>> install awscli \"\n      - pip3 install --upgrade --user awscli\n      - echo \">>> install kubectl\"\n      - curl -LO https://storage.googleapis.com/kubernetes-release/release/`curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt`/bin/linux/amd64/kubectl\n      - chmod +x ./kubectl\n      - mv -v ./kubectl /usr/local/bin\n      - curl --silent --location \"https://github.com/weaveworks/eksctl/releases/latest/download/eksctl_$(uname -s)_amd64.tar.gz\" | tar xz -C /tmp\n      - mv -v /tmp/eksctl /usr/local/bin\n      - eksctl version\n      - export PATH=$PWD/:$PATH\n\n  build:\n    commands:\n      # - eksctl create cluster --vpc-private-subnets=${SubnetPrivate1},${SubnetPrivate2} --vpc-public-subnets=${SubnetPublic1},${SubnetPublic2} --node-private-networking --name=${EKSClusterName} --region=${AWS::Region} --with-oidc --version=${KubernetesVersion} --managed --nodes=2\n      - eksctl create cluster --vpc-private-subnets=${SubnetPrivate1},${SubnetPrivate2} --vpc-public-subnets=${SubnetPublic1},${SubnetPublic2} --node-private-networking --name=${EKSClusterName} --region=${AWS::Region} --with-oidc --version=${KubernetesVersion} --without-nodegroup\n      - eksctl create nodegroup -f nodegroup.yaml\n      - eksctl create iamserviceaccount -f irsa.yaml --approve\n  post_build:\n    commands:\n      # CODEBUILD_BUILD_SUCCEEDING = 1 Set to 0 if the build is failing, or 1 if the build is succeeding.\n      - echo \">>> build status $CODEBUILD_BUILD_SUCCEEDING \"\n      - |\n        if [ \"$CODEBUILD_BUILD_SUCCEEDING\" -eq \"1\" ]\n        then\n          curl -X PUT -H 'Content-Type:' --data-binary '{\"Status\" : \"SUCCESS\",\"Reason\" : \"Creation Complete\", \"UniqueId\" : \"$CODEBUILD_BUILD_ID\",\"Data\" : \"Creation complete\"}' $CFN_RESPONSE_URL\n        else\n          curl -X PUT -H 'Content-Type:' --data-binary '{\"Status\" : \"FAILURE\",\"Reason\" : \"Creation Failed\", \"UniqueId\" : \"$CODEBUILD_BUILD_ID\",\"Data\" : \"See Codebuild logs for details. $CODEBUILD_LOG_PATH\"}' $CFN_RESPONSE_URL\n        fi\n          \n"
+                    }
+                },
+                "TimeoutInMinutes": 60
+            }
+        },
+        "WaitForStackCreationHandle": {
+            "Type": "AWS::CloudFormation::WaitConditionHandle"
+        },
+        "WaitCondition": {
+            "Type": "AWS::CloudFormation::WaitCondition",
+            "DependsOn": [
+                "CustomTriggerBuild"
+            ],
+            "Properties": {
+                "Handle": {
+                    "Ref": "WaitForStackCreationHandle"
+                },
+                "Timeout": 1800,
+                "Count": 1
+            }
+        },
+        "CustomTriggerBuild": {
+            "Type": "Custom::ManageCloud9IDEIamRole",
+            "DependsOn": "BuildProject",
+            "Properties": {
+                "ServiceToken": {
+                    "Fn::GetAtt": [
+                        "TriggerBuildLambda",
+                        "Arn"
+                    ]
+                },
+                "CodebuildProjectName": {
+                    "Ref": "BuildProject"
+                }
+            }
+        },
+        "TriggerBuildLambdaIamRole": {
+            "Type": "AWS::IAM::Role",
+            "Properties": {
+                "AssumeRolePolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Effect": "Allow",
+                            "Principal": {
+                                "Service": [
+                                    "lambda.amazonaws.com"
+                                ]
+                            },
+                            "Action": [
+                                "sts:AssumeRole"
+                            ]
+                        }
+                    ]
+                },
+                "ManagedPolicyArns": [
+                    "arn:aws:iam::aws:policy/CloudWatchLogsFullAccess"
+                ],
+                "Policies": [
+                    {
+                        "PolicyName": {
+                            "Fn::Sub": "IAMPolicy-${AWS::StackName}"
+                        },
+                        "PolicyDocument": {
+                            "Version": "2012-10-17",
+                            "Statement": [
+                                {
+                                    "Effect": "Allow",
+                                    "Action": [
+                                        "codebuild:*"
+                                    ],
+                                    "Resource": {
+                                        "Fn::GetAtt": [
+                                            "BuildProject",
+                                            "Arn"
+                                        ]
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                ]
+            }
+        },
+        "TriggerBuildLambda": {
+            "Type": "AWS::Lambda::Function",
+            "Properties": {
+                "Description": "function to retrieve User info",
+                "Handler": "index.handler",
+                "Role": {
+                    "Fn::GetAtt": [
+                        "TriggerBuildLambdaIamRole",
+                        "Arn"
+                    ]
+                },
+                "Runtime": "python3.12",
+                "Code": {
+                    "ZipFile": "import boto3\nimport logging\nimport sys\nimport json\nimport urllib3\n\nlogger = logging.getLogger()\nlogger.setLevel(logging.INFO)\nhttp = urllib3.PoolManager()\n\n\ncodebuild_client = boto3.client('codebuild')\n\n# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/cfn-lambda-function-code-cfnresponsemodule.html\ndef handler(event, context):\n    logger.info('Incoming Event: {0}'.format(event))\n    response = {}\n    response['PhysicalResourceId'] = 'hardcodedphyscialid'\n    response['StackId'] = event['StackId']\n    response['RequestId'] = event['RequestId']\n    response['LogicalResourceId'] = event['LogicalResourceId']\n    cfn_response_url = event['ResponseURL']\n\n    if event['RequestType'] == 'Delete':\n        # return\n        logger.info('Nothing to do. Request Type : {0}'.format(event['RequestType']))\n        response['Status'] = 'SUCCESS'\n\n    elif event['RequestType'] == 'Create' or event['RequestType'] == 'Update':\n\n      try:\n        codebuild_client.start_build(projectName=event['ResourceProperties']['CodebuildProjectName'])\n        response['Status'] = 'SUCCESS'\n\n      except:\n        logging.error('Error: {0}'.format(sys.exc_info() ))\n        response['Status'] = 'SUCCESS'\n\n    http.request('PUT', cfn_response_url, body=json.dumps(response).encode('utf-8'), headers={'Content-Type': 'application/json'})\n    return 'Done'\n"
+                }
+            }
+        }
+    }
+}

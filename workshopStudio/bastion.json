@@ -1,0 +1,134 @@
+{
+    "AWSTemplateFormatVersion": "2010-09-09",
+    "Description": "Linux Bastion Instance k8s and helm installed for Falcon CNAP Workshop.  During boot, bastionSetup.sh will run in userdata to install packages, configure k8s and install the CrowdStrike Protection Agent on your EKS cluster.",
+    "Parameters": {
+        "S3Bucket": {
+            "Type": "String",
+            "Default": ""
+        },
+        "S3Prefix": {
+            "Type": "String",
+            "Default": ""
+        },
+        "EnvAlias": {
+            "Type": "String",
+            "Default": ""
+        },
+        "EnvHash": {
+            "Type": "String",
+            "Default": ""
+        },
+        "VPCID": {
+            "Type": "String",
+            "Default": ""
+        },
+        "PublicSubnet1ID": {
+            "Type": "String",
+            "Default": ""
+        },
+        "FCSInstanceProfile": {
+            "Type": "String",
+            "Default": ""
+        },
+        "EnvironmentVariables": {
+            "NoEcho": true,
+            "Type": "String",
+            "Description": "A comma-separated list of environment variables for use in bootstrapping. Variables must be in the format `key=value`. `Value` cannot contain commas.",
+            "Default": ""
+        },
+        "AmazonAMI": {
+            "Type": "AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>",
+            "Description": "Get latest Amazon Linux 2 AMI",
+            "Default": "/aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2"
+        },
+        "BastionInstanceType": {
+            "Type": "String",
+            "Description": "Amazon EC2 instance type for the bastion instances.",
+            "Default": "t2.small"
+        }
+    },
+    "Resources": {
+        "BastionSG": {
+            "Type": "AWS::EC2::SecurityGroup",
+            "Properties": {
+                "GroupDescription": "allow connections from specified CIDR ranges",
+                "VpcId": {
+                    "Ref": "VPCID"
+                },
+                "SecurityGroupIngress": [
+                    {
+                        "IpProtocol": "tcp",
+                        "FromPort": 0,
+                        "ToPort": 65535,
+                        "CidrIp": "10.0.0.0/16"
+                    }
+                ],
+                "SecurityGroupEgress":[
+                    {
+                        "IpProtocol": "-1",
+                        "CidrIp": "0.0.0.0/0"
+                    }
+                ]                
+            }
+        },
+        "BastionHost": {
+            "Type": "AWS::EC2::Instance",
+            "Properties": {
+                "ImageId": {
+                    "Ref": "AmazonAMI"
+                },
+                "InstanceType": {
+                    "Ref": "BastionInstanceType"
+                },
+                "IamInstanceProfile": {
+                    "Ref": "FCSInstanceProfile"
+                },
+                "SubnetId": {
+                    "Ref": "PublicSubnet1ID"
+                },
+                "SecurityGroupIds": [
+                    {
+                        "Fn::GetAtt": [
+                            "BastionSG",
+                            "GroupId"
+                        ]
+                    }
+                ],
+                "BlockDeviceMappings": [
+                    {
+                        "DeviceName": "/dev/xvda",
+                        "Ebs": {
+                            "VolumeSize": 10,
+                            "VolumeType": "gp2",
+                            "Encrypted": true,
+                            "DeleteOnTermination": true
+                        }
+                    }
+                ],
+                "Tags": [
+                    {
+                        "Key": "Name",
+                        "Value": "LinuxBastion"
+                    }
+                ],
+                "UserData": {
+                    "Fn::Base64": {
+                        "Fn::Sub": "#!/bin/bash\nset -x\nfor e in $(echo \"${EnvironmentVariables}\" | tr ',' ' '); do\n  export $e\n  echo \"$e\" >> /root/.bashrc\ndone\nexport PATH=$PATH:/usr/local/bin\n#install prereqs\nyum install -y jq\n#yum install zsh -y\nmkdir /home/ssm-user\ntouch /home/ssm-user/.bashrc\necho \"export AWS_REGION=${AWS::Region}\" | tee -a /home/ssm-user/.bashrc\necho \"export AWS_DEFAULT_REGION=${AWS::Region}\" | tee -a /home/ssm-user/.bashrc\necho \"export PS1='\\[\\u@bastion\\w\\]$'\" | tee -a /home/ssm-user/.bashrc\necho \"alias k=kubectl\"  | tee -a /home/ssm-user/.bashrc\necho \"cd ~\" >> /home/ssm-user/.bashrc\n#get and run setup \ncd /tmp\naws s3 cp s3://${S3Bucket}/${S3Prefix}bastionSetup.sh bastionSetup.sh\nchmod +x bastionSetup.sh\n./bastionSetup.sh\n#mv /etc/zshrc /etc/zshrc2\n"
+                    }
+                }
+            }
+        }
+    },
+    "Outputs": {
+        "BastionSecurityGroupID": {
+            "Description": "Bastion security group ID.",
+            "Value": {
+                "Ref": "BastionSG"
+            }
+        },
+        "Postdeployment": {
+            "Description": "See the deployment guide for post-deployment steps.",
+            "Value": "https://fwd.aws/YqpXk?"
+        }
+    }
+}
