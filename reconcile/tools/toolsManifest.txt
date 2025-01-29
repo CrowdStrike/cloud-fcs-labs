@@ -1,0 +1,30 @@
+# Description of files in the ./tools folder
+
+file: create_code-zip.sh
+description: After making changes to files in the ../deployFalcon/Code directory, zips the /code directory and moves it to deployFalcon.
+note: the unzipped ..deployFalcon/Code directory is not required.
+
+file: setStackParameters.sh
+description: deploy this stack to manually recreate InfraStack parameters required to deploy the FalconStack.
+note: the InfraStack deployment is a prerequisite for deploying the FalconStack.
+
+file: StackCleanup.sh
+description: delete all FCS-Lab resources deployed through CloudFormation
+note: deleting stacks directly from CloudFormation will result in multiple failures due to resource changes after stack creation.
+
+file: StackSetRoles.yaml
+description: failure to delete CSPM EBStackSet can be caused by race condition deletion of IAM roles. Deploy this template to recreate those roles and delete StackSet manually.
+
+file: startDeployFalcon.sh
+description: recommended way to initiate step 2/2 of FCS-Lab deployment. This script captures Falcon API creds and launches stack deployment.
+note: Only required for first run. Subsequent stack deployments can start from deployFalcon.yaml and used stored secret.
+
+file: startDeployInfra.sh
+description: recommended way to initiate step 1/2 of FCS-Lab deployment. This script creates a hash, creates an S3 bucket and copies template files, writes parameters, and starts stack deployment.
+note: if base Infra Stack exists but parameters were manually deleted, you can recreate parameters with setStackParameters.yaml
+
+file: storeSecrets.yaml
+description: use this template to manually create Secrets Manager secrets instead of launching from the startDeployfalcon.sh script.
+
+file: toolsManifest.txt
+description: list and description of ./tools files.

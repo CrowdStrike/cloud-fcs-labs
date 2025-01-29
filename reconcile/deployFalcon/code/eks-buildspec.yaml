@@ -1,0 +1,41 @@
+version: 0.2
+
+phases:
+  pre_build:
+    on-failure: ABORT
+    commands:
+      - echo Creating kubeconfig for Amazon EKS...
+      - aws eks --region $AWS_DEFAULT_REGION update-kubeconfig --name $EKS_CLUSTER_NAME 
+      - REPOSITORY_URI=${REPO_ECR}
+      - COMMIT_HASH=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
+      - IMAGE_TAG=${COMMIT_HASH:=latest}
+      - echo "Update Image tag in kube-manifest..."
+      - sed -i 's@CONTAINER_IMAGE@'"$REPOSITORY_URI:$IMAGE_TAG"'@' ./app/tomcat/k8s/deployment.yaml
+      - cat ./app/tomcat/k8s/deployment.yaml
+      - echo "Update SA Arn in manifest..."
+      - sed -i 's@SERVICE_ROLE_ARN@'"$SERVICE_ROLE_ARN"'@' ./app/tomcat/k8s/sa.yaml
+      - cat ./app/tomcat/k8s/sa.yaml
+      - echo "Install Helm..."
+      - curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash
+      - helm repo add eks https://aws.github.io/eks-charts
+      - echo Deploying AWS Load Balancer Controller...
+      - helm install aws-load-balancer-controller eks/aws-load-balancer-controller -n kube-system --set clusterName=$EKS_CLUSTER_NAME --set serviceAccount.create=false --set serviceAccount.name=aws-load-balancer-controller --set region=$AWS_DEFAULT_REGION
+      - echo "Update Ingress with WAF ACL"
+      - WAF_RULE_ARN=${WEB_ACL_ARN}
+      - sed -i "s~WAFRULEARN~$WEB_ACL_ARN~" ./app/tomcat/k8s/ingress.yaml
+      - sed -i "s~KALIPUBLICIP~$KALIPUBLICIP~" ./app/tomcat/k8s/ingress.yaml
+      - cat ./app/tomcat/k8s/ingress.yaml
+      - sleep 60 
+     
+  build:
+    on-failure: ABORT
+    commands:
+      - echo webapp-deploy started on `date` 
+      - echo Creating Deployment Service Account...
+      - kubectl apply -f ./app/tomcat/k8s/sa.yaml
+      - echo Creating Deployment...
+      - kubectl apply -f ./app/tomcat/k8s/deployment.yaml
+      - echo Creating Service... 
+      - kubectl apply -f ./app/tomcat/k8s/service.yaml
+      - echo Creating Ingress AWS ALB...
+      - kubectl apply -f ./app/tomcat/k8s/ingress.yaml
