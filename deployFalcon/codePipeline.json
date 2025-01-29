@@ -1,0 +1,1439 @@
+{
+    "AWSTemplateFormatVersion": "2010-09-09",
+    "Description": "Creates a CI/CD pipeline for the vulnerable app.",
+    "Parameters": {
+        "EnvAlias": {
+            "Type": "String",
+            "Default": "fcs-lab"
+        },
+        "EnvHash": {
+            "Type": "String",
+            "Default": ""
+        },
+        "SensorCodeBuildProjectName": {
+            "Description": "CodeBuild Project Name for uploading sensor image to ECR",
+            "Type": "String",
+            "Default": "sensor-image-import"
+        },
+        "FalconSecretName": {
+            "Description": "Secret name for the Falcon API credentials",
+            "Type": "String",
+            "Default": "crowdstrike-falcon-api"
+        },
+        "CrowdStrikeCloud": {
+            "Description": "CrowdStrike Cloud",
+            "Type": "String",
+            "Default": "us-1"
+        },
+        "FalconClientID": {
+            "NoEcho": true,
+            "Description": "Client ID for the Falcon API",
+            "Type": "String"
+        },
+        "FalconClientSecret": {
+            "NoEcho": true,
+            "Description": "Client Secret for the Falcon API",
+            "Type": "String"
+        },
+        "FalconCID": {
+            "NoEcho": true,
+            "Description": "Customer CID for the Falcon Installation",
+            "Type": "String"
+        },
+        "ECRRepositoryName": {
+            "Type": "String",
+            "Default": "webapp"
+        },
+        "SensorECRRepositoryName": {
+            "Type": "String",
+            "Default": "falcon-sensor"
+        },
+        "KacEcrRepositoryName": {
+            "Type": "String",
+            "Default": "falcon-kac"
+        },
+        "VulnerableImageECRRepositoryName": {
+            "Type": "String",
+            "Default": "web-dvwa"
+        },
+        "S3CodeBucketName": {
+            "Description": "Name of the S3 bucket with the initial commit of code",
+            "Type": "String"
+        },
+        "S3Prefix": {
+            "Description": "prefix for file path",
+            "Type": "String",
+            "Default": "deployFalcon"
+        },
+        "S3CodeBucketKey": {
+            "Description": "Key of the S3 bucket with the initial commit of code",
+            "Type": "String",
+            "Default": "code.zip"
+        },
+        "ECRCodeBuildProjectName": {
+            "Description": "CodeBuild Project Name for building the app image",
+            "Type": "String",
+            "Default": "webapp-image-build"
+        },
+        "EKSCodeBuildServiceRoleArn": {
+            "Description": "CodeBuild Service Role for EKS",
+            "Type": "String"
+        },
+        "EKSCodeBuildProjectName": {
+            "Description": "CodeBuild Project Name for deploying demo webapp to EKS",
+            "Type": "String",
+            "Default": "webapp-eks-deploy"
+        },
+        "DeployFalconCodeBuildProjectName": {
+            "Description": "CodeBuild project name for deploying Falcon runtime sensors to EKS",
+            "Type": "String",
+            "Default": "falcon-eks-deploy"
+        },
+        "EKSClusterName": {
+            "Description": "EKS Cluster name to deploy to",
+            "Type": "String",
+            "Default": "fcs-lab"
+        },
+        "PodS3AccessRoleArn": {
+            "Description": "IAM Role to associate with the Service Account",
+            "Type": "String"
+        },
+        "WafRulesARN": {
+            "Type": "String"
+        },
+        "KaliPublicIp": {
+            "Type": "String",
+            "Default": "1.1.1.1"
+        },
+        "PermissionsBoundary": {
+            "Type": "String",
+            "Default": ""
+        }
+    },
+    "Conditions": {
+        "PermissionsBoundary": {
+            "Fn::Not": [
+                {
+                    "Fn::Equals": [
+                        {
+                            "Ref": "PermissionsBoundary"
+                        },
+                        ""
+                    ]
+                }
+            ]
+        }
+    },
+    "Resources": {
+        "CodePipelineBucketParameter": {
+            "Type": "AWS::SSM::Parameter",
+            "Properties": {
+                "Description": "set codepipeline S3bucket parameter for stack deletion cleanup",
+                "Name": {
+                    "Fn::Sub": "psCodePipelineBucket-${EnvHash}"
+                },
+                "Type": "String",
+                "Value": {
+                    "Ref": "CodePipelineArtifactStoreBucket"
+                }
+            }
+        },
+        "ECRRepository": {
+            "Type": "AWS::ECR::Repository",
+            "Properties": {
+                "RepositoryName": {
+                    "Ref": "ECRRepositoryName"
+                }
+            }
+        },
+        "CodePipelineArtifactStoreBucket": {
+            "Type": "AWS::S3::Bucket"
+        },
+        "CodePipelineArtifactStoreBucketPolicy": {
+            "Type": "AWS::S3::BucketPolicy",
+            "Properties": {
+                "Bucket": {
+                    "Ref": "CodePipelineArtifactStoreBucket"
+                },
+                "PolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Sid": "DenyUnEncryptedObjectUploads",
+                            "Effect": "Deny",
+                            "Principal": "*",
+                            "Action": "s3:PutObject",
+                            "Resource": {
+                                "Fn::Join": [
+                                    "",
+                                    [
+                                        {
+                                            "Fn::GetAtt": [
+                                                "CodePipelineArtifactStoreBucket",
+                                                "Arn"
+                                            ]
+                                        },
+                                        "/*"
+                                    ]
+                                ]
+                            },
+                            "Condition": {
+                                "StringNotEquals": {
+                                    "s3:x-amz-server-side-encryption": "aws:kms"
+                                }
+                            }
+                        },
+                        {
+                            "Sid": "DenyInsecureConnections",
+                            "Effect": "Deny",
+                            "Principal": "*",
+                            "Action": "s3:*",
+                            "Resource": {
+                                "Fn::Join": [
+                                    "",
+                                    [
+                                        {
+                                            "Fn::GetAtt": [
+                                                "CodePipelineArtifactStoreBucket",
+                                                "Arn"
+                                            ]
+                                        },
+                                        "/*"
+                                    ]
+                                ]
+                            },
+                            "Condition": {
+                                "Bool": {
+                                    "aws:SecureTransport": false
+                                }
+                            }
+                        }
+                    ]
+                }
+            }
+        },
+        "CodePipelineServiceRole": {
+            "Type": "AWS::IAM::Role",
+            "Properties": {
+                "PermissionsBoundary": {
+                    "Fn::If": [
+                        "PermissionsBoundary",
+                        {
+                            "Fn::Sub": "arn:aws:iam::${AWS::AccountId}:policy/${PermissionsBoundary}"
+                        },
+                        {
+                            "Ref": "AWS::NoValue"
+                        }
+                    ]
+                },
+                "AssumeRolePolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Effect": "Allow",
+                            "Principal": {
+                                "Service": [
+                                    "codepipeline.amazonaws.com"
+                                ]
+                            },
+                            "Action": "sts:AssumeRole"
+                        }
+                    ]
+                },
+                "Path": "/",
+                "Policies": [
+                    {
+                        "PolicyName": "AWS-CodePipeline-Service-3",
+                        "PolicyDocument": {
+                            "Version": "2012-10-17",
+                            "Statement": [
+                                {
+                                    "Effect": "Allow",
+                                    "Action": [
+                                        "codedeploy:CreateDeployment",
+                                        "codedeploy:GetApplicationRevision",
+                                        "codedeploy:GetDeployment",
+                                        "codedeploy:GetDeploymentConfig",
+                                        "codedeploy:RegisterApplicationRevision"
+                                    ],
+                                    "Resource": "*"
+                                },
+                                {
+                                    "Effect": "Allow",
+                                    "Action": [
+                                        "codebuild:BatchGetBuilds",
+                                        "codebuild:StartBuild"
+                                    ],
+                                    "Resource": "*"
+                                },
+                                {
+                                    "Effect": "Allow",
+                                    "Action": [
+                                        "devicefarm:ListProjects",
+                                        "devicefarm:ListDevicePools",
+                                        "devicefarm:GetRun",
+                                        "devicefarm:GetUpload",
+                                        "devicefarm:CreateUpload",
+                                        "devicefarm:ScheduleRun"
+                                    ],
+                                    "Resource": "*"
+                                },
+                                {
+                                    "Effect": "Allow",
+                                    "Action": [
+                                        "lambda:InvokeFunction",
+                                        "lambda:ListFunctions"
+                                    ],
+                                    "Resource": "*"
+                                },
+                                {
+                                    "Effect": "Allow",
+                                    "Action": [
+                                        "iam:PassRole"
+                                    ],
+                                    "Resource": "*"
+                                },
+                                {
+                                    "Effect": "Allow",
+                                    "Action": [
+                                        "ec2:*",
+                                        "cloudwatch:*",
+                                        "s3:*"
+                                    ],
+                                    "Resource": "*"
+                                }
+                            ]
+                        }
+                    }
+                ]
+            }
+        },
+        "WebAppPipeline": {
+            "Type": "AWS::CodePipeline::Pipeline",
+            "Properties": {
+                "Name": "webapp-deploy-pipeline",
+                "RoleArn": {
+                    "Fn::GetAtt": [
+                        "CodePipelineServiceRole",
+                        "Arn"
+                    ]
+                },
+                "Stages": [
+                    {
+                        "Name": "Source",
+                        "Actions": [
+                            {
+                                "Name": "SourceAction",
+                                "ActionTypeId": {
+                                    "Category": "Source",
+                                    "Owner": "AWS",
+                                    "Version": "1",
+                                    "Provider": "S3"
+                                },
+                                "OutputArtifacts": [
+                                    {
+                                        "Name": "SourceOutput"
+                                    }
+                                ],
+                                "Configuration": {
+                                    "S3Bucket": {
+                                        "Ref": "S3CodeBucketName"
+                                    },
+                                    "S3ObjectKey": {
+                                        "Fn::Join": [
+                                            "/", [
+                                            {
+                                                "Ref": "S3Prefix"
+                                            },
+                                            {
+                                                "Ref": "S3CodeBucketKey"
+                                            }
+                                            ]
+                                        ]
+                                    },
+                                    "PollForSourceChanges": false
+                                },
+                                "RunOrder": 1
+                            }
+                        ]
+                    },
+                    {
+                        "Name": "Build",
+                        "Actions": [
+                            {
+                                "Name": "Build",
+                                "ActionTypeId": {
+                                    "Category": "Build",
+                                    "Owner": "AWS",
+                                    "Version": "1",
+                                    "Provider": "CodeBuild"
+                                },
+                                "Configuration": {
+                                    "ProjectName": {
+                                        "Ref": "ECRCodeBuildProject"
+                                    }
+                                },
+                                "InputArtifacts": [
+                                    {
+                                        "Name": "SourceOutput"
+                                    }
+                                ],
+                                "OutputArtifacts": [
+                                    {
+                                        "Name": "BuildOutput"
+                                    }
+                                ],
+                                "RunOrder": 1
+                            }
+                        ]
+                    },
+                    {
+                        "Name": "Deploy",
+                        "Actions": [
+                            {
+                                "Name": "Deploy",
+                                "ActionTypeId": {
+                                    "Category": "Build",
+                                    "Owner": "AWS",
+                                    "Version": "1",
+                                    "Provider": "CodeBuild"
+                                },
+                                "Configuration": {
+                                    "ProjectName": {
+                                        "Ref": "EKSCodeBuildProject"
+                                    }
+                                },
+                                "InputArtifacts": [
+                                    {
+                                        "Name": "SourceOutput"
+                                    }
+                                ],
+                                "RunOrder": 1
+                            }
+                        ]
+                    }
+                ],
+                "ArtifactStore": {
+                    "Type": "S3",
+                    "Location": {
+                        "Ref": "CodePipelineArtifactStoreBucket"
+                    }
+                }
+            },
+            "DependsOn": ["SensorImportPipeline"]
+        },
+        "ECRCodeBuildServiceRole": {
+            "Type": "AWS::IAM::Role",
+            "Properties": {
+                "PermissionsBoundary": {
+                    "Fn::If": [
+                        "PermissionsBoundary",
+                        {
+                            "Fn::Sub": "arn:aws:iam::${AWS::AccountId}:policy/${PermissionsBoundary}"
+                        },
+                        {
+                            "Ref": "AWS::NoValue"
+                        }
+                    ]
+                },
+                "AssumeRolePolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Effect": "Allow",
+                            "Action": [
+                                "sts:AssumeRole"
+                            ],
+                            "Principal": {
+                                "Service": [
+                                    "codebuild.amazonaws.com"
+                                ]
+                            }
+                        }
+                    ]
+                }
+            }
+        },
+        "ECRCodeBuildServicePolicy": {
+            "Type": "AWS::IAM::Policy",
+            "Properties": {
+                "PolicyName": "ECRCodeBuildServicePolicy",
+                "Roles": [
+                    {
+                        "Ref": "ECRCodeBuildServiceRole"
+                    }
+                ],
+                "PolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Effect": "Allow",
+                            "Action": [
+                                "logs:CreateLogGroup",
+                                "logs:CreateLogStream",
+                                "logs:PutLogEvents"
+                            ],
+                            "Resource": "arn:aws:logs:*:*:*"
+                        },
+                        {
+                            "Effect": "Allow",
+                            "Action": [
+                                "s3:GetObject",
+                                "s3:GetObjectVersion",
+                                "s3:PutObject"
+                            ],
+                            "Resource": [
+                                "*"
+                            ]
+                        },
+                        {
+                            "Effect": "Allow",
+                            "Action": [
+                                "ecr:*"
+                            ],
+                            "Resource": [
+                                "*"
+                            ]
+                        },
+                        {
+                            "Effect": "Allow",
+                            "Action": [
+                                "secretsmanager:*"
+                            ],
+                            "Resource": [
+                                "*"
+                            ]
+                        }
+                    ]
+                }
+            }
+        },
+        "ECRCodeBuildProject": {
+            "Type": "AWS::CodeBuild::Project",
+            "Properties": {
+                "Name": {
+                    "Ref": "ECRCodeBuildProjectName"
+                },
+                "ServiceRole": {
+                    "Ref": "ECRCodeBuildServiceRole"
+                },
+                "Source": {
+                    "Type": "CODEPIPELINE",
+                    "BuildSpec": "webapp-buildspec.yaml"
+                },
+                "Artifacts": {
+                    "Type": "CODEPIPELINE"
+                },
+                "Environment": {
+                    "ComputeType": "BUILD_GENERAL1_SMALL",
+                    "Image": "aws/codebuild/standard:5.0",
+                    "ImagePullCredentialsType": "CODEBUILD",
+                    "PrivilegedMode": true,
+                    "Type": "LINUX_CONTAINER",
+                    "EnvironmentVariables": [
+                        {
+                            "Name": "REPO_ECR",
+                            "Value": {
+                                "Fn::GetAtt": [
+                                    "ECRRepository",
+                                    "RepositoryUri"
+                                ]
+                            },
+                            "Type": "PLAINTEXT"
+                        },
+                        {
+                            "Name": "AWS_DEFAULT_REGION",
+                            "Value": {
+                                "Fn::Sub": "${AWS::Region}"
+                            },
+                            "Type": "PLAINTEXT"
+                        },
+                        {
+                            "Name": "FALCON_CLIENT_ID",
+                            "Value": {
+								"Fn::Sub": [
+                                    "${arn}:FalconClientId",
+                                    {
+                                        "arn": {
+                                            "Fn::ImportValue": "FalconSecretArn"
+                                        }
+                                    }
+                                ]
+                            },
+                            "Type": "SECRETS_MANAGER"                         
+                        },
+                        {
+                            "Name": "FALCON_CLIENT_SECRET",
+                            "Value": {
+								"Fn::Sub": [
+                                    "${arn}:FalconSecret",
+                                    {
+                                        "arn": {
+                                            "Fn::ImportValue": "FalconSecretArn"
+                                        }
+                                    }
+                                ]
+                            },
+                            "Type": "SECRETS_MANAGER"
+                        },
+                        {
+                            "Name": "CS_CLOUD",
+                            "Value": {
+                                "Fn::Sub": [
+                                    "${arn}:CSCloud",
+                                    {
+                                        "arn": {
+                                            "Fn::ImportValue": "FalconSecretArn"
+                                        }
+                                    }
+                                ]
+                            },
+                            "Type": "SECRETS_MANAGER"
+                        },
+                        {
+                            "Name": "CS_SCAN_IMAGE",
+                            "Value": "False",
+                            "Type": "PLAINTEXT"
+                        }
+                    ]
+                }
+            }
+        },
+        "EKSCodeBuildProject": {
+            "Type": "AWS::CodeBuild::Project",
+            "Properties": {
+                "Name": {
+                    "Ref": "EKSCodeBuildProjectName"
+                },
+                "ServiceRole": {
+                    "Ref": "EKSCodeBuildServiceRoleArn"
+                },
+                "Source": {
+                    "Type": "CODEPIPELINE",
+                    "BuildSpec": "eks-buildspec.yaml"
+                },
+                "Artifacts": {
+                    "Type": "CODEPIPELINE"
+                },
+                "Environment": {
+                    "ComputeType": "BUILD_GENERAL1_SMALL",
+                    "Image": "aws/codebuild/standard:5.0",
+                    "ImagePullCredentialsType": "CODEBUILD",
+                    "PrivilegedMode": true,
+                    "Type": "LINUX_CONTAINER",
+                    "EnvironmentVariables": [
+                        {
+                            "Name": "REPO_ECR",
+                            "Value": {
+                                "Fn::GetAtt": [
+                                    "ECRRepository",
+                                    "RepositoryUri"
+                                ]
+                            },
+                            "Type": "PLAINTEXT"
+                        },
+                        {
+                            "Name": "AWS_DEFAULT_REGION",
+                            "Value": {
+                                "Fn::Sub": "${AWS::Region}"
+                            },
+                            "Type": "PLAINTEXT"
+                        },
+                        {
+                            "Name": "EKS_CLUSTER_NAME",
+                            "Value": {
+                                "Ref": "EKSClusterName"
+                            },
+                            "Type": "PLAINTEXT"
+                        },
+                        {
+                            "Name": "SERVICE_ROLE_ARN",
+                            "Value": {
+                                "Ref": "PodS3AccessRoleArn"
+                            },
+                            "Type": "PLAINTEXT"
+                        },
+                        {
+                            "Name": "WEB_ACL_ARN",
+                            "Value": {
+                                "Ref": "WafRulesARN"
+                            },
+                            "Type": "PLAINTEXT"
+                        },
+                        {
+                            "Name": "KALIPUBLICIP",
+                            "Value": {
+                                "Ref": "KaliPublicIp"
+                            },
+                            "Type": "PLAINTEXT"
+                        }
+                    ]
+                }
+            }
+        },
+        "SensorECRRepository": {
+            "Type": "AWS::ECR::Repository",
+            "Properties": {
+                "RepositoryName": {
+                    "Ref": "SensorECRRepositoryName"
+                }
+            }
+        },
+        "SensorImportPipeline": {
+            "Type": "AWS::CodePipeline::Pipeline",
+            "Properties": {
+                "Name": "sensor-import-pipeline",
+                "RoleArn": {
+                    "Fn::GetAtt": [
+                        "CodePipelineServiceRole",
+                        "Arn"
+                    ]
+                },
+                "Stages": [
+                    {
+                        "Name": "Source",
+                        "Actions": [
+                            {
+                                "Name": "SourceAction",
+                                "ActionTypeId": {
+                                    "Category": "Source",
+                                    "Owner": "AWS",
+                                    "Version": "1",
+                                    "Provider": "S3"
+                                },
+                                "OutputArtifacts": [
+                                    {
+                                        "Name": "SourceOutput"
+                                    }
+                                ],
+                                "Configuration": {
+                                    "S3Bucket": {
+                                        "Ref": "S3CodeBucketName"
+                                    },
+                                    "S3ObjectKey": {
+                                        "Fn::Join": [
+                                            "/", [
+                                            {
+                                                "Ref": "S3Prefix"
+                                            },
+                                            {
+                                                "Ref": "S3CodeBucketKey"
+                                            }
+                                            ]
+                                        ]
+                                    },
+                                    "PollForSourceChanges": false
+                                },
+                                "RunOrder": 1
+                            }
+                        ]
+                    },
+                    {
+                        "Name": "Build",
+                        "Actions": [
+                            {
+                                "Name": "Build",
+                                "ActionTypeId": {
+                                    "Category": "Build",
+                                    "Owner": "AWS",
+                                    "Version": "1",
+                                    "Provider": "CodeBuild"
+                                },
+                                "Configuration": {
+                                    "ProjectName": {
+                                        "Ref": "SensorCodeBuildProject"
+                                    }
+                                },
+                                "InputArtifacts": [
+                                    {
+                                        "Name": "SourceOutput"
+                                    }
+                                ],
+                                "OutputArtifacts": [
+                                    {
+                                        "Name": "BuildOutput"
+                                    }
+                                ],
+                                "RunOrder": 1
+                            }
+                        ]
+                    },
+                    {
+                        "Name": "Deploy",
+                        "Actions": [
+                            {
+                                "Name": "Deploy",
+                                "ActionTypeId": {
+                                    "Category": "Build",
+                                    "Owner": "AWS",
+                                    "Version": "1",
+                                    "Provider": "CodeBuild"
+                                },
+                                "Configuration": {
+                                    "ProjectName": {
+                                        "Ref": "deployFalconCodeBuildProject"
+                                    }
+                                },
+                                "InputArtifacts": [
+                                    {
+                                        "Name": "SourceOutput"
+                                    }
+                                ],
+                                "RunOrder": 1
+                            }
+                        ]
+                    }
+                ],
+                "ArtifactStore": {
+                    "Type": "S3",
+                    "Location": {
+                        "Ref": "CodePipelineArtifactStoreBucket"
+                    }
+                }
+            }
+        },
+        "SensorCodeBuildProject": {
+            "Type": "AWS::CodeBuild::Project",
+            "Properties": {
+                "Name": {
+                    "Ref": "SensorCodeBuildProjectName"
+                },
+                "ServiceRole": {
+                    "Ref": "ECRCodeBuildServiceRole"
+                },
+                "Source": {
+                    "Type": "CODEPIPELINE",
+                    "BuildSpec": "falcon-sensor-buildspec.yaml"
+                },
+                "Artifacts": {
+                    "Type": "CODEPIPELINE"
+                },
+                "Environment": {
+                    "ComputeType": "BUILD_GENERAL1_SMALL",
+                    "Image": "aws/codebuild/standard:5.0",
+                    "ImagePullCredentialsType": "CODEBUILD",
+                    "PrivilegedMode": true,
+                    "Type": "LINUX_CONTAINER",
+                    "EnvironmentVariables": [
+                        {
+                            "Name": "FALCON_CLIENT_ID",
+                            "Value": {
+								"Fn::Sub": [
+                                    "${arn}:FalconClientId",
+                                    {
+                                        "arn": {
+                                            "Fn::ImportValue": "FalconSecretArn"
+                                        }
+                                    }
+                                ]
+                            },
+                            "Type": "SECRETS_MANAGER"                        
+                        },
+                        {
+                            "Name": "FALCON_CLIENT_SECRET",
+                            "Value": {
+                                "Fn::Sub": [
+                                    "${arn}:FalconSecret",
+                                    {
+                                        "arn": {
+                                            "Fn::ImportValue": "FalconSecretArn"
+                                        }
+                                    }
+                                ]
+                            },
+                            "Type": "SECRETS_MANAGER"
+                        },
+                        {
+                            "Name": "FALCON_CID",
+                            "Value": {
+								"Fn::Sub": [
+                                    "${arn}:FalconCID",
+                                    {
+                                        "arn": {
+                                            "Fn::ImportValue": "FalconSecretArn"
+                                        }
+                                    }
+                                ]
+                            },
+                            "Type": "SECRETS_MANAGER"
+                        },
+                        {
+                            "Name": "CS_CLOUD",
+                            "Value": {
+								"Fn::Sub": [
+                                    "${arn}:CSCloud",
+                                    {
+                                        "arn": {
+                                            "Fn::ImportValue": "FalconSecretArn"
+                                        }
+                                    }
+                                ]
+                            },
+                            "Type": "SECRETS_MANAGER"
+                        },
+                        {
+                            "Name": "REPO_URI",
+                            "Value": {
+                                "Fn::Sub": "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com"
+                            },
+                            "Type": "PLAINTEXT"
+                        },
+                        {
+                            "Name": "AWS_REGION",
+                            "Value": {
+                                "Ref": "AWS::Region"
+                            }
+                        },
+                        {
+                            "Name": "CS_SCAN_IMAGE",
+                            "Value": "True"
+                        }
+                    ]
+                }
+            }
+        },
+        "deployFalconCodeBuildProject": {
+            "Type": "AWS::CodeBuild::Project",
+            "Properties": {
+                "Name": {
+                    "Ref": "DeployFalconCodeBuildProjectName"
+                },
+                "ServiceRole": {
+                    "Ref": "EKSCodeBuildServiceRoleArn"
+                },
+                "Source": {
+                    "Type": "CODEPIPELINE",
+                    "BuildSpec": "deployFalcon-buildspec.yaml"
+                },
+                "Artifacts": {
+                    "Type": "CODEPIPELINE"
+                },
+                "Environment": {
+                    "ComputeType": "BUILD_GENERAL1_SMALL",
+                    "Image": "aws/codebuild/standard:5.0",
+                    "ImagePullCredentialsType": "CODEBUILD",
+                    "PrivilegedMode": true,
+                    "Type": "LINUX_CONTAINER",
+                    "EnvironmentVariables": [
+                        {
+                            "Name": "AWS_DEFAULT_REGION",
+                            "Value": {
+                                "Fn::Sub": "${AWS::Region}"
+                            },
+                            "Type": "PLAINTEXT"
+                        },
+                        {
+                            "Name": "REPO_URI",
+                            "Value": {
+                                "Fn::Sub": "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com"
+                            },
+                            "Type": "PLAINTEXT"
+                        },
+                        {
+                            "Name": "EKS_CLUSTER_NAME",
+                            "Value": {
+                                "Ref": "EKSClusterName"
+                            },
+                            "Type": "PLAINTEXT"
+                        },
+                        {
+                            "Name": "FALCON_CLIENT_ID",
+                            "Value": {
+								"Fn::Sub": [
+                                    "${arn}:FalconClientId",
+                                    {
+                                        "arn": {
+                                            "Fn::ImportValue": "FalconSecretArn"
+                                        }
+                                    }
+                                ]
+                            },
+                            "Type": "SECRETS_MANAGER"                         
+                        },
+                        {
+                            "Name": "FALCON_CLIENT_SECRET",
+                            "Value": {
+								"Fn::Sub": [
+                                    "${arn}:FalconSecret",
+                                    {
+                                        "arn": {
+                                            "Fn::ImportValue": "FalconSecretArn"
+                                        }
+                                    }
+                                ]
+                            },
+                            "Type": "SECRETS_MANAGER"
+                        },
+                        {
+                            "Name": "FALCON_CID",
+                            "Value": {
+								"Fn::Sub": [
+                                    "${arn}:FalconCID",
+                                    {
+                                        "arn": {
+                                            "Fn::ImportValue": "FalconSecretArn"
+                                        }
+                                    }
+                                ]
+                            },
+                            "Type": "SECRETS_MANAGER"
+                        },
+                        {
+                            "Name": "CS_CLOUD",
+                            "Value": {
+								"Fn::Sub": [
+                                    "${arn}:CSCloud",
+                                    {
+                                        "arn": {
+                                            "Fn::ImportValue": "FalconSecretArn"
+                                        }
+                                    }
+                                ]
+                            },
+                            "Type": "SECRETS_MANAGER"
+                        },
+                        {
+                            "Name": "KAC_IMAGE_REPO",
+                            "Value": {
+                                "Fn::GetAtt": [
+                                    "KacEcrRepository",
+                                    "RepositoryUri"
+                                ]
+                            },
+                            "Type": "PLAINTEXT"
+                        },
+                        {
+                            "Name": "AWS_REGION",
+                            "Value": {
+                                "Ref": "AWS::Region"
+                            }
+                        },
+                        {
+                            "Name": "CS_SCAN_IMAGE",
+                            "Value": "True"
+                        }
+                    ]
+                }
+            }
+        },
+        "VulnerableImageRepository": {
+            "Type": "AWS::ECR::Repository",
+            "Properties": {
+                "RepositoryName": {
+                    "Ref": "VulnerableImageECRRepositoryName"
+                }
+            }
+        },
+        "VulnerableImageAppPipeline": {
+            "Type": "AWS::CodePipeline::Pipeline",
+            "Properties": {
+                "Name": "vulnerable-image-pipeline",
+                "RoleArn": {
+                    "Fn::GetAtt": [
+                        "CodePipelineServiceRole",
+                        "Arn"
+                    ]
+                },
+                "Stages": [
+                    {
+                        "Name": "Source",
+                        "Actions": [
+                            {
+                                "Name": "SourceAction",
+                                "ActionTypeId": {
+                                    "Category": "Source",
+                                    "Owner": "AWS",
+                                    "Version": "1",
+                                    "Provider": "S3"
+                                },
+                                "OutputArtifacts": [
+                                    {
+                                        "Name": "SourceOutput"
+                                    }
+                                ],
+                                "Configuration": {
+                                    "S3Bucket": {
+                                        "Ref": "S3CodeBucketName"
+                                    },
+                                    "S3ObjectKey": {
+                                        "Fn::Join": [
+                                            "/", [
+                                            {
+                                                "Ref": "S3Prefix"
+                                            },
+                                            {
+                                                "Ref": "S3CodeBucketKey"
+                                            }
+                                            ]
+                                        ]
+                                    },
+                                    "PollForSourceChanges": false
+                                },
+                                "RunOrder": 1
+                            }
+                        ]
+                    },
+                    {
+                        "Name": "Build",
+                        "Actions": [
+                            {
+                                "Name": "Build",
+                                "ActionTypeId": {
+                                    "Category": "Build",
+                                    "Owner": "AWS",
+                                    "Version": "1",
+                                    "Provider": "CodeBuild"
+                                },
+                                "Configuration": {
+                                    "ProjectName": {
+                                        "Ref": "VulnerableImageCodeBuildProject"
+                                    }
+                                },
+                                "InputArtifacts": [
+                                    {
+                                        "Name": "SourceOutput"
+                                    }
+                                ],
+                                "OutputArtifacts": [
+                                    {
+                                        "Name": "BuildOutput"
+                                    }
+                                ],
+                                "RunOrder": 1
+                            }
+                        ]
+                    }
+                ],
+                "ArtifactStore": {
+                    "Type": "S3",
+                    "Location": {
+                        "Ref": "CodePipelineArtifactStoreBucket"
+                    }
+                }
+            }
+        },
+        "VulnerableImageCodeBuildProject": {
+            "Type": "AWS::CodeBuild::Project",
+            "Properties": {
+                "Name": "vulnerable-image-build",
+                "ServiceRole": {
+                    "Ref": "ECRCodeBuildServiceRole"
+                },
+                "Source": {
+                    "Type": "CODEPIPELINE",
+                    "BuildSpec": "vulnerable-image-buildspec.yaml"
+                },
+                "Artifacts": {
+                    "Type": "CODEPIPELINE"
+                },
+                "Environment": {
+                    "ComputeType": "BUILD_GENERAL1_SMALL",
+                    "Image": "aws/codebuild/standard:5.0",
+                    "ImagePullCredentialsType": "CODEBUILD",
+                    "PrivilegedMode": true,
+                    "Type": "LINUX_CONTAINER",
+                    "EnvironmentVariables": [
+                        {
+                            "Name": "REPO_ECR",
+                            "Value": {
+                                "Fn::GetAtt": [
+                                    "VulnerableImageRepository",
+                                    "RepositoryUri"
+                                ]
+                            },
+                            "Type": "PLAINTEXT"
+                        },
+                        {
+                            "Name": "AWS_DEFAULT_REGION",
+                            "Value": {
+                                "Fn::Sub": "${AWS::Region}"
+                            },
+                            "Type": "PLAINTEXT"
+                        },
+                        {
+                            "Name": "FALCON_CLIENT_ID",
+                            "Value": {
+								"Fn::Sub": [
+                                    "${arn}:FalconClientId",
+                                    {
+                                        "arn": {
+                                            "Fn::ImportValue": "FalconSecretArn"
+                                        }
+                                    }
+                                ]
+                            },
+                            "Type": "SECRETS_MANAGER"                          
+                        },
+                        {
+                            "Name": "FALCON_CLIENT_SECRET",
+                            "Value": {
+								"Fn::Sub": [
+                                    "${arn}:FalconSecret",
+                                    {
+                                        "arn": {
+                                            "Fn::ImportValue": "FalconSecretArn"
+                                        }
+                                    }
+                                ]
+                            },
+                            "Type": "SECRETS_MANAGER"
+                        },
+                        {
+                            "Name": "CS_CLOUD",
+                            "Value": {
+								"Fn::Sub": [
+                                    "${arn}:CSCloud",
+                                    {
+                                        "arn": {
+                                            "Fn::ImportValue": "FalconSecretArn"
+                                        }
+                                    }
+                                ]
+                            },
+                            "Type": "SECRETS_MANAGER"
+                        },
+                        {
+                            "Name": "CS_SCAN_IMAGE",
+                            "Value": "True",
+                            "Type": "PLAINTEXT"
+                        }
+                    ]
+                }
+            }
+        },
+        "KacEcrRepository": {
+            "Type": "AWS::ECR::Repository",
+            "Properties": {
+                "RepositoryName": {
+                    "Ref": "KacEcrRepositoryName"
+                }
+            }
+        },
+        "CleanUpECRRole": {
+            "Type": "AWS::IAM::Role",
+            "Properties": {
+                "Path": "/",
+                "PermissionsBoundary": {
+                    "Fn::If": [
+                        "PermissionsBoundary",
+                        {
+                            "Fn::Sub": "arn:aws:iam::${AWS::AccountId}:policy/${PermissionsBoundary}"
+                        },
+                        {
+                            "Ref": "AWS::NoValue"
+                        }
+                    ]
+                },
+                "AssumeRolePolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Effect": "Allow",
+                            "Principal": {
+                                "Service": "lambda.amazonaws.com"
+                            },
+                            "Action": "sts:AssumeRole"
+                        }
+                    ]
+                },
+                "ManagedPolicyArns": [
+                    {
+                        "Fn::Sub": "arn:${AWS::Partition}:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+                    }
+                ],
+                "Policies": [
+                    {
+                        "PolicyName": "ConfigPolicy",
+                        "PolicyDocument": {
+                            "Version": "2012-10-17",
+                            "Statement": [
+                                {
+                                    "Sid": "VisualEditor0",
+                                    "Effect": "Allow",
+                                    "Action": [
+                                        "s3:DeleteObjectVersion",
+                                        "s3:ListBucketVersions",
+                                        "s3:GetBucketLogging",
+                                        "s3:ListBucket",
+                                        "ecr:BatchDeleteImage",
+                                        "ecr:ListImages",
+                                        "s3:GetObjectVersionAttributes",
+                                        "s3:GetBucketPolicy",
+                                        "ecr:DeleteRepository",
+                                        "s3:GetObjectVersionAcl",
+                                        "ecr:DescribeRepositories",
+                                        "s3:GetBucketOwnershipControls",
+                                        "s3:DeleteObject",
+                                        "s3:DeleteBucket",
+                                        "s3:ListBucketMultipartUploads",
+                                        "s3:GetBucketWebsite",
+                                        "s3:GetBucketVersioning",
+                                        "s3:GetBucketAcl",
+                                        "s3:GetBucketNotification",
+                                        "s3:GetObject",
+                                        "s3:GetBucketCORS",
+                                        "s3:GetObjectVersionForReplication",
+                                        "s3:GetBucketLocation",
+                                        "s3:GetObjectVersion",
+                                        "ecr:GetRepositoryPolicy",
+                                        "s3:ListAllMyBuckets"
+                                    ],
+                                    "Resource": "*"
+                                }
+                            ]
+                        }
+                    }
+                ]
+            }
+        },
+        "CleanUpECR": {
+            "Type": "AWS::CloudFormation::CustomResource",
+            "Properties": {
+                "ServiceToken": {
+                    "Fn::GetAtt": [
+                        "CleanUpECRFunction",
+                        "Arn"
+                    ]
+                },
+                "aws_region": {
+                    "Ref": "AWS::Region"
+                },
+                "aws_account": {
+                    "Ref": "AWS::AccountId"
+                },
+                "repository_list": [
+                    {
+                        "Ref": "ECRRepositoryName"
+                    },
+                    {
+                        "Ref": "SensorECRRepositoryName"
+                    },
+                    {
+                        "Ref": "VulnerableImageECRRepositoryName"
+                    },
+                    {
+                        "Ref": "KacEcrRepositoryName"
+                    }
+                ],
+                "CodePipelineArtifactStoreBucket": {
+                    "Ref": "CodePipelineArtifactStoreBucket"
+                }
+            }
+        },
+        "CleanUpECRFunction": {
+            "Type": "AWS::Lambda::Function",
+            "Properties": {
+                "Description": "Called on stack deletion. Removes objects from ECR and S3 to enabled stack deletion to complete",
+                "Handler": "index.handler",
+                "Runtime": "python3.8",
+                "Role": {
+                    "Fn::GetAtt": [
+                        "CleanUpECRRole",
+                        "Arn"
+                    ]
+                },
+                "Timeout": 240,
+                "Code": {
+                    "ZipFile": "import json\nimport logging\nimport boto3\nimport cfnresponse\n\n\nlogger = logging.getLogger()\nlogger.setLevel(logging.INFO)\n\ndef delete_objects(bucket):\n    s3 = boto3.resource('s3')\n    s3_bucket = s3.Bucket(bucket)\n    bucket_versioning = s3.BucketVersioning(bucket)\n    if bucket_versioning.status == 'Enabled':\n      response = s3_bucket.object_versions.delete()\n    else:\n      response = s3_bucket.objects.all().delete()\n    s3_bucket.delete()\n    logger.info('Delete object response {}'.format(response))\n\ndef delete_repository(repo_list, account, region):\n    logger.info('deleting {}'.format(repo_list))\n    for repo in repo_list:\n      client = boto3.client(\"ecr\", region_name=region)\n      try:\n        logger.info('Deleting repository {}'.format(repo))\n        response = client.delete_repository(registryId = account, repositoryName=repo, force=True)\n      except Exception as error:\n        logger.info('Error {}'.format(error))\n        pass    \n\ndef handler(event, context):\n    # make sure we send a failure to CloudFormation if the function is going to timeout\n    logger.info('Received event:{}'.format(json.dumps(event)))\n    status = cfnresponse.SUCCESS\n    # Delete the repositories int the list\n    try:\n        repository_list = event['ResourceProperties']['repository_list']\n        aws_account = event['ResourceProperties']['aws_account']\n        aws_region = event['ResourceProperties']['aws_region']\n        codepipeline_bucket = event['ResourceProperties']['CodePipelineArtifactStoreBucket']\n        if event['RequestType'] == 'Delete':\n            delete_repository(repository_list, aws_account, aws_region)\n            # Delete the contents of the CodePipelineArtifactStoreBucket bucket\n            delete_objects(codepipeline_bucket)\n    except Exception as error:\n        logging.error('Exception: {}'.format(error))\n    finally:\n        cfnresponse.send(event, context, status, {}, None)\n"
+                }
+            }
+        },
+
+        
+        "S3EventRole": {
+            "Type": "AWS::IAM::Role",
+            "Properties": {
+              "AssumeRolePolicyDocument": {
+                "Version": "2012-10-17",
+                "Statement": [
+                  {
+                    "Effect": "Allow",
+                    "Principal": {
+                      "Service": [
+                        "events.amazonaws.com"
+                      ]
+                    },
+                    "Action": "sts:AssumeRole"
+                  }
+                ]
+              },
+              "Path": "/",
+              "Policies": [
+                {
+                  "PolicyName": "eb-pipeline-execution",
+                  "PolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                      {
+                        "Effect": "Allow",
+                        "Action": "codepipeline:StartPipelineExecution",
+                        "Resource": [
+                            {"Fn::GetAtt": [
+                                "WebAppPipeline",
+                                "Arn"
+                            ]},
+                            {"Fn::GetAtt": [
+                                "VulnerableImageAppPipeline",
+                                "Arn"
+                            ]},
+                            {"Fn::GetAtt": [
+                                "SensorImportPipeline",
+                                "Arn"
+                            ]}
+                        ]
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+        },
+        "EventRule": {
+            "Type": "AWS::Events::Rule",
+            "Properties": {
+            "EventPattern": {
+                "source": [
+                "aws.s3"
+                ],
+                "detail-type": [
+                "Object Created"
+                ],
+                "detail": {
+                    "bucket": {
+                        "name": [
+                            { "Ref": "S3CodeBucketName"}
+                        ]
+                    }
+                }
+            },
+            "Name": "EnabledS3SourceRule",
+            "State": "ENABLED",
+            "Targets": [
+                {
+                "Arn": [
+                    {"Fn::GetAtt": [
+                        "WebAppPipeline",
+                        "Arn"
+                    ]},
+                    {"Fn::GetAtt": [
+                        "VulnerableImageAppPipeline",
+                        "Arn"
+                    ]},
+                    {"Fn::GetAtt": [
+                        "SensorImportPipeline",
+                        "Arn"
+                    ]}
+                ],
+                "RoleArn": {
+                    "Fn::GetAtt": [
+                    "S3EventRole",
+                    "Arn"
+                    ]
+                },
+                "Id": "codepipeline"
+                }
+            ]
+            }
+        }
+    }
+}
