@@ -151,7 +151,7 @@ Resources:
   CodePipelineStack:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: !If [UseS3BucketInput, !Sub 'https://${S3BucketInput}.s3.amazonaws.com/${S3Prefix}/codePipeline.yaml', !Sub 'https://${psS3Bucket}.s3.amazonaws.com/${S3Prefix}/codePipeline.yaml']
+      TemplateURL: !If [UseS3BucketInput, !Sub 'https://${S3BucketInput}.s3.amazonaws.com/${S3Prefix}/codePipeline.json', !Sub 'https://${psS3Bucket}.s3.amazonaws.com/${S3Prefix}/codePipeline.json']
       Parameters:
         EnvHash: !If [UseEnvHashInput, !Ref EnvHashInput, !Ref psEnvHash]
         S3CodeBucketName: !If [UseS3BucketInput, !Ref S3BucketInput, !Ref psS3Bucket]
@@ -173,7 +173,7 @@ Resources:
     Type: AWS::CloudFormation::Stack
     Condition: DeployCSPMStack
     Properties:
-      TemplateURL: !If [UseS3BucketInput, !Sub 'https://${S3BucketInput}.s3.amazonaws.com/${S3Prefix}/cspm.yaml', !Sub 'https://${psS3Bucket}.s3.amazonaws.com/${S3Prefix}/cspm.yaml']
+      TemplateURL: !If [UseS3BucketInput, !Sub 'https://${S3BucketInput}.s3.amazonaws.com/${S3Prefix}/cspm.json', !Sub 'https://${psS3Bucket}.s3.amazonaws.com/${S3Prefix}/cspm.json']
       Parameters:
         # EnvHash:  !Ref EnvHash
         EnvHash: !If [UseEnvHashInput, !Ref EnvHashInput, !Ref psEnvHash]
@@ -186,13 +186,13 @@ Resources:
   WAFRules:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: !If [UseS3BucketInput, !Sub 'https://${S3BucketInput}.s3.amazonaws.com/${S3Prefix}/wafACL.yaml', !Sub 'https://${psS3Bucket}.s3.amazonaws.com/${S3Prefix}/wafACL.yaml']
+      TemplateURL: !If [UseS3BucketInput, !Sub 'https://${S3BucketInput}.s3.amazonaws.com/${S3Prefix}/wafACL.json', !Sub 'https://${psS3Bucket}.s3.amazonaws.com/${S3Prefix}/wafACL.json']
 
   IOAIOMSetup:
     Type: AWS::CloudFormation::Stack
     Condition: DeploySampleIOAsIOMs
     Properties:
-      TemplateURL: !If [UseS3BucketInput, !Sub 'https://${S3BucketInput}.s3.amazonaws.com/${S3Prefix}/ioa-iom.yaml', !Sub 'https://${psS3Bucket}.s3.amazonaws.com/${S3Prefix}/ioa-iom.yaml']
+      TemplateURL: !If [UseS3BucketInput, !Sub 'https://${S3BucketInput}.s3.amazonaws.com/${S3Prefix}/ioa-iom.json', !Sub 'https://${psS3Bucket}.s3.amazonaws.com/${S3Prefix}/ioa-iom.json']
       # Parameters:
         # KeyPairName: !Ref KeyPairName
         # PermissionsBoundary: !Ref PermissionsBoundary
