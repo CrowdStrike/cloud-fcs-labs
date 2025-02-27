@@ -1368,18 +1368,9 @@
                         "Effect": "Allow",
                         "Action": "codepipeline:StartPipelineExecution",
                         "Resource": [
-                            {"Fn::GetAtt": [
-                                "WebAppPipeline",
-                                "Arn"
-                            ]},
-                            {"Fn::GetAtt": [
-                                "VulnerableImageAppPipeline",
-                                "Arn"
-                            ]},
-                            {"Fn::GetAtt": [
-                                "SensorImportPipeline",
-                                "Arn"
-                            ]}
+                            {"Fn::Sub":  "arn:${AWS::Partition}:codepipeline:${AWS::Region}:${AWS::AccountId}:webapp-deploy-pipeline"},
+                            {"Fn::Sub":  "arn:${AWS::Partition}:codepipeline:${AWS::Region}:${AWS::AccountId}:sensor-import-pipeline"},
+                            {"Fn::Sub":  "arn:${AWS::Partition}:codepipeline:${AWS::Region}:${AWS::AccountId}:vulnerable-image-pipeline"}
                         ]
                       }
                     ]
@@ -1410,27 +1401,34 @@
             "State": "ENABLED",
             "Targets": [
                 {
-                "Arn": [
-                    {"Fn::GetAtt": [
-                        "WebAppPipeline",
+                    "Arn": {"Fn::Sub":  "arn:${AWS::Partition}:codepipeline:${AWS::Region}:${AWS::AccountId}:webapp-deploy-pipeline"},
+                    "RoleArn": {
+                        "Fn::GetAtt": [
+                        "S3EventRole",
                         "Arn"
-                    ]},
-                    {"Fn::GetAtt": [
-                        "VulnerableImageAppPipeline",
-                        "Arn"
-                    ]},
-                    {"Fn::GetAtt": [
-                        "SensorImportPipeline",
-                        "Arn"
-                    ]}
-                ],
-                "RoleArn": {
-                    "Fn::GetAtt": [
-                    "S3EventRole",
-                    "Arn"
-                    ]
+                        ]
+                    },
+                    "Id": "codepipeline1"
                 },
-                "Id": "codepipeline"
+                {
+                    "Arn": {"Fn::Sub":  "arn:${AWS::Partition}:codepipeline:${AWS::Region}:${AWS::AccountId}:sensor-import-pipeline"},
+                    "RoleArn": {
+                        "Fn::GetAtt": [
+                        "S3EventRole",
+                        "Arn"
+                        ]
+                    },
+                    "Id": "codepipeline2"
+                },
+                {
+                    "Arn": {"Fn::Sub":  "arn:${AWS::Partition}:codepipeline:${AWS::Region}:${AWS::AccountId}:vulnerable-image-pipeline"},
+                    "RoleArn": {
+                        "Fn::GetAtt": [
+                        "S3EventRole",
+                        "Arn"
+                        ]
+                    },
+                    "Id": "codepipeline3"
                 }
             ]
             }
