@@ -46,9 +46,9 @@ Metadata:
 Parameters:
   # Falcon Keys
   FalconSecretName:
+    Description: Name of the Secrets Manager secret 
     Type: String
-    Default: 'crowdstrike-falcon-api'
-    Description: "Use when Falcon secrets have already been created via startDeployFalcon.sh bash script, storeSecrets.yaml, or manual entry"
+    Default: ""
   FalconClientID:
     Description: "Your Falcon OAuth2 Client ID (optional, if secrets are already stored or to bypass stored secrets)." 
     NoEcho: 'true'
@@ -156,13 +156,14 @@ Resources:
         EnvHash: !If [UseEnvHashInput, !Ref EnvHashInput, !Ref psEnvHash]
         S3CodeBucketName: !If [UseS3BucketInput, !Ref S3BucketInput, !Ref psS3Bucket]
         FalconSecretName: !Ref FalconSecretName
-        FalconClientID: !If [UseInputSecret, !Ref FalconClientID, "{{resolve:secretsmanager:crowdstrike-falcon-api:SecretString:FalconClientId}}"]
-        FalconClientSecret: !If [UseInputSecret, !Ref FalconClientSecret, "{{resolve:secretsmanager:crowdstrike-falcon-api:SecretString:FalconSecret}}"]
-        FalconCID: !If [UseInputSecret, !Ref FalconCID, "{{resolve:secretsmanager:crowdstrike-falcon-api:SecretString:FalconCID}}"]
-        CrowdStrikeCloud: !If [UseInputSecret, !Ref CrowdStrikeCloud, "{{resolve:secretsmanager:crowdstrike-falcon-api:SecretString:CSCloud}}"]
+        FalconClientID: !If [UseInputSecret, !Ref FalconClientID, !Sub "{{resolve:secretsmanager:${FalconSecretName}:SecretString:FalconClientId}}"]
+        FalconClientSecret: !If [UseInputSecret, !Ref FalconClientSecret, !Sub "{{resolve:secretsmanager:${FalconSecretName}:SecretString:FalconSecret}}"]
+        FalconCID: !If [UseInputSecret, !Ref FalconCID, !Sub "{{resolve:secretsmanager:${FalconSecretName}:SecretString:FalconCID}}"]
+        CrowdStrikeCloud: !If [UseInputSecret, !Ref CrowdStrikeCloud, !Sub "{{resolve:secretsmanager:${FalconSecretName}:SecretString:CSCloud}}"]
         S3Prefix: !Ref S3Prefix
         S3CodeBucketKey: code.zip
-        EKSCodeBuildServiceRoleArn: !If [UseEnvHashInput, !Sub 'arn:aws:iam::${AWS::AccountId}:role/fcsworkshop-admin-${EnvHashInput}', !Sub 'arn:aws:iam::${AWS::AccountId}:role/fcsworkshop-admin-${psEnvHash}']
+        EKSCodeBuildServiceRoleArn: !ImportValue EKSCodeBuildServiceRoleArn
+        # EKSCodeBuildServiceRoleArn: !If [UseEnvHashInput, !Sub 'arn:aws:iam::${AWS::AccountId}:role/fcsworkshop-admin-${EnvHashInput}', !Sub 'arn:aws:iam::${AWS::AccountId}:role/fcsworkshop-admin-${psEnvHash}']
         EKSClusterName: !Ref EKSClusterName
         PodS3AccessRoleArn: !Sub arn:aws:iam::${AWS::AccountId}:role/fcs-lab-pod-s3-access
         # PermissionsBoundary: !Ref PermissionsBoundary
@@ -177,9 +178,10 @@ Resources:
       Parameters:
         # EnvHash:  !Ref EnvHash
         EnvHash: !If [UseEnvHashInput, !Ref EnvHashInput, !Ref psEnvHash]
-        FalconClientID: !If [UseInputSecret, !Ref FalconClientID, "{{resolve:secretsmanager:crowdstrike-falcon-api:SecretString:FalconClientId}}"]
-        FalconSecret: !If [UseInputSecret, !Ref FalconClientSecret, "{{resolve:secretsmanager:crowdstrike-falcon-api:SecretString:FalconSecret}}"]
-        CSCloud: !If [UseInputSecret, !Ref CrowdStrikeCloud, "{{resolve:secretsmanager:crowdstrike-falcon-api:SecretString:CSCloud}}"]
+        FalconSecretName: !Ref FalconSecretName
+        # FalconClientID: !If [UseInputSecret, !Ref FalconClientID, !Sub "{{resolve:secretsmanager:${FalconSecretName}:SecretString:FalconClientId}}"]
+        # FalconSecret: !If [UseInputSecret, !Ref FalconClientSecret, !Sub "{{resolve:secretsmanager:${FalconSecretName}:SecretString:FalconSecret}}"]
+        CSCloud: !If [UseInputSecret, !Ref CrowdStrikeCloud, !Sub "{{resolve:secretsmanager:${FalconSecretName}:SecretString:CSCloud}}"]
         # PermissionsBoundary: !Ref PermissionsBoundary
         # KeyPairName: !Ref KeyPairName
  
