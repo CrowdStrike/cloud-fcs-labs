@@ -273,6 +273,9 @@
                     "EKSCodeBuildServiceRole",
                     "Arn"
                 ]
+            },
+            "Export": {
+                "Name": "EKSCodeBuildServiceRoleArn"
             }
         },
         "BastionHostRole": {
