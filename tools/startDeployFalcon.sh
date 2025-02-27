@@ -92,23 +92,38 @@ ParameterKey=FalconClientSecret,ParameterValue=$CLIENT_SECRET \
 ParameterKey=FalconCID,ParameterValue=$CS_CID \
 ParameterKey=CrowdStrikeCloud,ParameterValue=$CS_CLOUD)
 
-if [[ "$response" == *"StackId"* ]]
-then
-echo "The Cloudformation stack for Falcon Secret will take 1-5 minutes to complete"
-echo 
-echo "Check the status at any time with the command"
-echo 
-echo "aws cloudformation describe-stacks --stack-name $SecretStackName --region $AWS_REGION"
-else
-echo "Stack creation failed. Check CloudFormation logs for details, or try:"
-echo 
-echo "cloudformation describe-stacks --stack-name $SecretStackName --region $AWS_REGION}"
+# if [[ "$response" == *"StackId"* ]]
+# then
+# echo "The Cloudformation stack for Falcon Secret will take 1-5 minutes to complete"
+# echo 
+# echo "Check the status at any time with the command"
+# echo 
+# echo "aws cloudformation describe-stacks --stack-name $SecretStackName --region $AWS_REGION"
+# else
+# echo "Stack creation failed. Check CloudFormation logs for details, or try:"
+# echo 
+# echo "cloudformation describe-stacks --stack-name $SecretStackName --region $AWS_REGION}"
+# fi
+
+echo "Waiting for $SecretStackName stack creation."
+
+aws cloudformation wait stack-create-complete \
+--region ${AWS_REGION}  \
+--stack-name ${SecretStackName}
+status=$?
+
+if [[ ${status} -ne 0 ]] ; then
+    # Waiter encountered a failure state.
+    echo "Stack $SecretStackName creation failed. AWS error code is $status"
+
+    exit ${status}
 fi
 
 echo " "
 response=$(aws cloudformation create-stack --stack-name $StackName --template-url https://${tmpS3Bucket}.s3.amazonaws.com/${S3Prefix}/${TemplateName} --region $AWS_REGION --disable-rollback \
 --capabilities CAPABILITY_NAMED_IAM CAPABILITY_IAM CAPABILITY_AUTO_EXPAND \
 --parameters \
+ParameterKey=FalconSecretName,ParameterValue=$SecretName \
 ParameterKey=DeployCSPM,ParameterValue=$CSPMDeploy \
 ParameterKey=DeployCSPMSampleDetections,ParameterValue=$IOAIOMDeploy)
 
@@ -123,7 +138,7 @@ echo "aws cloudformation describe-stacks --stack-name $StackName --region $AWS_R
 else
 echo "Stack creation failed. Check CloudFormation logs for details, or try:"
 echo 
-echo "cloudformation describe-stacks --stack-name $StackName --region $AWS_REGION}"
+echo "cloudformation describe-stacks --stack-name $StackName --region $AWS_REGION"
 fi
  
 }
