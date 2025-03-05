@@ -503,6 +503,16 @@
                             "Resource": [
                                 "*"
                             ]
+                        },
+                        {
+                            "Effect": "Allow",
+                            "Action": [
+                                "eks:DescribeCluster",
+                                "eks:Describe"
+                            ],
+                            "Resource": [
+                                "*"
+                            ]
                         }
                     ]
                 }
@@ -606,7 +616,7 @@
                     "Ref": "EKSCodeBuildProjectName"
                 },
                 "ServiceRole": {
-                    "Ref": "EKSCodeBuildServiceRoleArn"
+                    "Ref": "ECRCodeBuildServiceRole"
                 },
                 "Source": {
                     "Type": "CODEPIPELINE",
@@ -827,7 +837,7 @@
                                     }
                                 ]
                             },
-                            "Type": "SECRETS_MANAGER"                        
+                            "Type": "SECRETS_MANAGER"
                         },
                         {
                             "Name": "FALCON_CLIENT_SECRET",
@@ -899,7 +909,7 @@
                     "Ref": "DeployFalconCodeBuildProjectName"
                 },
                 "ServiceRole": {
-                    "Ref": "EKSCodeBuildServiceRoleArn"
+                    "Ref": "ECRCodeBuildServiceRole"
                 },
                 "Source": {
                     "Type": "CODEPIPELINE",
