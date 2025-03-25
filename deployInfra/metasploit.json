@@ -62,7 +62,7 @@
         },
         "LatestKaliAMI": {
             "Type": "AWS::EC2::Image::Id",
-            "Default": "ami-04a641bd18c613b04"
+            "Default": "ami-04b4f1a9cf54c11d0"
         }
     },
     "Resources": {
