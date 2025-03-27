@@ -1,4 +1,7 @@
-# Getting Started
+---
+title: "Getting Started"
+weight: 30
+---
 
 Building infrastructure in CloudFormation is easy, building complex and secure infrastructure where components tie together is complicated. One benefit of using Infrastructure-as-Code is that the intended result is always documented and incremental improvements are incorporated into future deployments.
 
@@ -18,4 +21,4 @@ Login to Falcon console to confirm the AWS account is registered and CSPM is ena
 
 URL: https://falcon.crowdstrike.com/cloud-security/registration-v2/aws
 
-![Screenshots of Falcon cloud account registration](account-reg.png)
+![Screenshots of Falcon cloud account registration](/static/img/account-reg.png)

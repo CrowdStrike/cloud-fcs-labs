@@ -1,4 +1,7 @@
-# Lab 2: Attacking the Tomcat service
+---
+title: "Lab 2: Attacking the Tomcat service"
+weight: 2
+---
 
 **Launching the attack**
 
@@ -22,7 +25,7 @@ Examine the contents of the resulting “startup.rc” file
 cat ./startup.rc
 ```
 
-![Contents of startup.rc](start.png)
+![Contents of startup.rc](/static/img/start.png)
 
 - We are using the “tomcat_jsp_upload_bypass’ exploit resource script
 - rhosts is the DNS address of the Application Load Balancer used to reach the vulnerable system
@@ -60,7 +63,7 @@ sudo msfconsole -r startup.rc
 
 Type “yes” if prompted to set up a new database, and accept the defaults
 
-![Launching Metasploit](runstart.png)
+![Launching Metasploit](/static/img/runstart.png)
 
 Examining the output we can observe the following
 
@@ -82,7 +85,7 @@ _List active sessions_
 sessions -i
 ```
 
-![Metasploit sessions](sessions.png)
+![Metasploit sessions](/static/img/sessions.png)
 
 Connect to the active session
 
@@ -90,7 +93,7 @@ Connect to the active session
 sessions <<id>>
 ```
 
-![Connect to Metasploit session](session1.png)
+![Connect to Metasploit session](/static/img/session1.png)
 
 View your logged in identity
 
@@ -98,7 +101,7 @@ View your logged in identity
 whoami
 ```
 
-![Logged in users](whoami.png)
+![Logged in users](/static/img/whoami.png)
 
 _List the root directory on the compromised container_
 
@@ -106,7 +109,7 @@ _List the root directory on the compromised container_
 ls -al
 ```
 
-![Directory listing](ls.png)
+![Directory listing](/static/img/ls.png)
 
 > [!NOTE]
 > We appear to have the aws cli installed on the container, a risky practice but potentially helpful to the attacker. (We will return to this later.) You will also discover that we have the ability to install additional software as required.

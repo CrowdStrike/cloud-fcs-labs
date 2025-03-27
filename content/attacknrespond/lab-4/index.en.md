@@ -1,4 +1,7 @@
-# Lab 4: Moving laterally to a S3 bucket
+---
+title: "Lab 4: Moving laterally to a S3 bucket"
+weight: 4
+---
 
 In the previous lab, we explored the compromised container and discovered an associated IAM profile with access to the AWS CLI. We also discovered that we have read access to Amazon Simple Storage Service (S3).
 
@@ -10,7 +13,7 @@ Due to a fairly common access control misconfiguration, we can impersonate both 
 
 In the previous lab, we enumerated the AWS account S3 buckets.
 
-![Listing S3 contents](lab3-5.png)
+![Listing S3 contents](/static/img/lab3-5.png)
 
 Notice that two buckets include the string “confidential” and one of them appears to be a logging bucket. To be stealthy, we should disable any active bucket access logging policy that might be writing to that bucket.
 
@@ -28,7 +31,7 @@ Check for a bucket logging policy
 aws s3api get-bucket-logging --bucket $TARGET_BUCKET
 ```
 
-![Bucket logging configuration](lab4-1.png)
+![Bucket logging configuration](/static/img/lab4-1.png)
 
 > [!NOTE]
 > If your Metasploit session closes unexpectedly, type “run -j” at the metasploit console prompt to reconnect to the target.
@@ -59,7 +62,7 @@ Now we’re just going to try and access the confidential bucket and see if we g
 aws s3 ls s3://$TARGET_BUCKET
 ```
 
-![Reviewing bucket target](lab4-2.png)
+![Reviewing bucket target](/static/img/lab4-2.png)
 
 Success!
 
@@ -75,4 +78,4 @@ aws s3 cp s3://$TARGET_BUCKET/confidential-data.txt s3-captured.txt
 
 There are three steps to this attack. The diagram below shows what we have accomplished with a few simple misconfigurations.
 
-![Attack progression](lab4-3.png)
+![Attack progression](/static/img/lab4-3.png)

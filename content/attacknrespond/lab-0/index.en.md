@@ -1,4 +1,7 @@
-# Lab 0: Connect to the Kali Linux instance
+---
+title: "Lab 0: Connect to the Kali Linux instance"
+weight: 0
+---
 
 Throughout the lab, you will interact with the AWS Management Console, the AWS CLI, Kubernetes CLI, and the CrowdStrike Falcon Platform. You will run AWS CLI commands on the Attacker instance (Kali) and on a Bastion host instance (LinuxBastion). A CLI shell will be provided by AWS Systems Manager (SSM) Session Manager connection which you can access from the Amazon Elastic Compute Cloud (EC2) Console. SSM Session Manager connections do not require open ports or SSH keys, which improves your security posture. Access is controlled by AWS Identity and Access Management (IAM) and audited by AWS CloudTrail.
 
@@ -12,7 +15,7 @@ Throughout the lab, you will interact with the AWS Management Console, the AWS C
       ```
       kubectl get pods -A
       ```
-      ![Screenshtot of pod listing](kube.png)
+      ![Screenshtot of pod listing](/static/img/kube.png)
 
 2. **Access Kali Instance**
 
@@ -23,4 +26,4 @@ Throughout the lab, you will interact with the AWS Management Console, the AWS C
    1. Click “Connect” on the top navigation bar, and then select `Session Manager`, click the orange “Connect” button.
    1. You are connected to the Kali instance!
 
-   ![Screenshot of the Kali shell](kali.png)
+   ![Screenshot of the Kali shell](/static/img/kali.png)

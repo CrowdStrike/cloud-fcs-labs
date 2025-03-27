@@ -1,4 +1,7 @@
-# Deployment Options
+---
+title: "Deployment Options"
+weight: 10
+---
 
 Cloud architecture natively supports resiliency, scale, and agility by leveraging Infrastructure-as-Code (IaC) and GitOps as primary mechanisms for deploying applications and resources. Compared to manual or ad-hoc procedures, IaC is less error-prone, may be triggered in response to events in the environment, and can deploy and build more quickly. While it can take a bit longer to learn to use IaC tools and to convert manual runbooks to actual code, IaC templates can then be used to trigger builds repeatedly in a fraction of the time. Also, improvements are incorporated into the templates which can be used to update existing deployments, and to assure that all future deployments follow a standard configuration.
 
