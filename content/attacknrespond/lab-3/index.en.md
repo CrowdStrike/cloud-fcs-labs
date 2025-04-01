@@ -1,6 +1,6 @@
 ---
 title: "Lab 3: Credential Theft"
-weight: 3
+weight: 4
 ---
 
 With root access to the container, we will set out to achieve our main objectives, data exfiltration and lateral movement. E-Crime adversaries often prioritize credential theft as a revenue generation strategy. Credentials are sold on the dark web to assist other adversaries in establishing quick and stealthy access to specific target organizations. In general though, credential access is a way to establish persistence and widen the attack.
@@ -17,8 +17,7 @@ Next, we’ll try to access EC2 instance metadata to try to capture AWS service 
 curl http://169.254.169.254/latest/meta-data/identity-credentials/ec2/security-credentials/ec2-instance
 ```
 
-> [!NOTE]
-> If your Metasploit session closes unexpectedly, type “run -j” at the metasploit console prompt to reconnect to the target.
+::alert[If your Metasploit session closes unexpectedly, type “run -j” at the metasploit console prompt to reconnect to the target.]{header="Note"}
 
 ![Contents of /etc/passwd and instance metadata](/static/img/lab3-1.png)
 
@@ -26,8 +25,7 @@ curl http://169.254.169.254/latest/meta-data/identity-credentials/ec2/security-c
 
 We will continue our attack by downloading some additional scripts that we can use to gather more information from the compromised container.
 
-> [!NOTE]
-> Using the netstat utility, you can easily find the Kali public IP by listing established HTTPS connections originating from the container.
+::alert[Using the netstat utility, you can easily find the Kali public IP by listing established HTTPS connections originating from the container.]{header="Note"}
 
 List established outbound connections to port 443 (HTTPS)
 
@@ -71,5 +69,4 @@ aws s3 ls
 
 ![Listing S3 contents](/static/img/lab3-5.png)
 
-> [!NOTE]
-> If your Metasploit session closes unexpectedly, type “run -j” at the metasploit console prompt to reconnect to the target.
+::alert[If your Metasploit session closes unexpectedly, type `run -j` at the metasploit console prompt to reconnect to the target.]{header="Note"}

@@ -1,6 +1,6 @@
 ---
 title: "Lab 1: Enumerating the Target"
-weight: 1
+weight: 2
 ---
 
 All malicious attacks occur in phases, beginning with an initial reconnaissance phase in which a potential target is identified, followed by an enumeration phase to gather more information about the target. The reconnaissance phase often begins as an automated, systematic network scan over millions of IP addresses to locate open ports.
@@ -9,8 +9,7 @@ In our scenario, we locate a web server listening on port 80, and begin the atta
 
 Instead of scanning millions of addresses, we’ll save some time and start with the DNS name of the AWS Application Load Balancer (ALB) which distributes traffic to our vulnerable Tomcat service running on an EKS cluster
 
-> [!NOTE]
-> Run the attack sequence commands in the next few lab sections on your Kali shell.
+::alert[Run the attack sequence commands in the next few lab sections on your Kali shell.]{header="Note"}
 
 **1. Identify the target**
 
@@ -97,15 +96,12 @@ The output is the first few lines of an attack script that you will use with the
 head /opt/metasploit-framework/embedded/framework/modules/exploits/multi/http/tomcat_jsp_upload_bypass.rb -n 24
 ```
 
-> [!NOTE]
-> On regular Kali, the path would be: /usr/share/metasploit-framework/modules/exploits/multi/http/tomcat_jsp_upload_bypass.rb
+::alert[On regular Kali, the path would be: /usr/share/metasploit-framework/modules/exploits/multi/http/tomcat_jsp_upload_bypass.rb]{header="Note"}
 
 ![Kali's built-in Tomcat JSP Upload Bypass](/static/img/kali-exploit.png)
 
-> [!NOTE]
-> The exploit is documented in Github with detailed instructions on how to use it https://github.com/rapid7/metasploit-framework/blob/master/documentation/modules/exploit/multi/http/tomcat_jsp_upload_bypass.md
+::alert[The exploit is documented in GitHub with detailed instructions on how to use it: https://github.com/rapid7/metasploit-framework/blob/master/documentation/modules/exploit/multi/http/tomcat_jsp_upload_bypass.md]{header="Note"}
 
 We have now completed the first phases of the attack. We have identified a target application with a potential vulnerability that we can exploit to gain access to the hosted environment and the required tools to perform the attack.
 
-> [!TIP]
-> For more detail regarding this vulnerability and relevant scenarios for mitigating negative impacts, review the security advisory: https://nvd.nist.gov/vuln/detail/CVE-2017-12617
+::alert[For more detail regarding this vulnerability and relevant scenarios for mitigating negative impacts, review the security advisory: https://nvd.nist.gov/vuln/detail/CVE-2017-12617]{header="Tip"}

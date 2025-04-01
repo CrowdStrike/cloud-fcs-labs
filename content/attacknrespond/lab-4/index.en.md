@@ -1,6 +1,6 @@
 ---
 title: "Lab 4: Moving laterally to a S3 bucket"
-weight: 4
+weight: 5
 ---
 
 In the previous lab, we explored the compromised container and discovered an associated IAM profile with access to the AWS CLI. We also discovered that we have read access to Amazon Simple Storage Service (S3).
@@ -33,8 +33,7 @@ aws s3api get-bucket-logging --bucket $TARGET_BUCKET
 
 ![Bucket logging configuration](/static/img/lab4-1.png)
 
-> [!NOTE]
-> If your Metasploit session closes unexpectedly, type “run -j” at the metasploit console prompt to reconnect to the target.
+::alert[If your Metasploit session closes unexpectedly, type “run -j” at the metasploit console prompt to reconnect to the target.]{header="Note"}
 
 We can see from the result that there is a logging bucket policy. We’ll create and associate an empty bucket policy with the confidential data bucket to disable the policy.
 

@@ -1,6 +1,6 @@
 ---
 title: "Lab 5: Protecting Cluster and Cloud with CrowdStrike"
-weight: 5
+weight: 6
 ---
 
 In this section, we’ll see how CrowdStrike responds to an attack on our vulnerable containerized Tomcat application on an EKS cluster. As you’ll see, CrowdStrike will detect and stop the attack early and immediately, with minimal post-install effort.

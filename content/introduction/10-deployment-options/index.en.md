@@ -7,8 +7,7 @@ Cloud architecture natively supports resiliency, scale, and agility by leveragin
 
 Falcon Cloud Security encompasses several components which require separate deployment strategies, nearly all of which can be accomplished using Infrastructure-as-Code. The IaC templates used to build the CrowdStrike Falcon Cloud Security labs on AWS Workshop Studio are primarily written in CloudFormation with additional Bash, Python, and Kubernetes YAML manifests, all of which are provided to the environment through CloudFormation.
 
-> [!NOTE]
-> Go to the next page (“Lab Environment”) to continue discussion of the deployment mechanism used for this lab environment.
+::alert[Go to the next page (“Lab Environment”) to continue discussion of the deployment mechanism used for this lab environment.]{header="Note"}
 
 Components of Falcon Cloud Security, as well as other Falcon modules, can also be deployed using Terraform and Ansible. Code samples and documentation is available on CrowdStrike’s public GitHub site (https://github.com/CrowdStrike ), with most of the AWS-specific integrations at https://github.com/CrowdStrike/Cloud-AWS .
 
@@ -27,7 +26,7 @@ ABI encompasses three separate AWS deployment integrations:
 
   - CWP for EC2 uses AWS Systems Manager Distributor to deploy the Falcon sensor on all new EC2 managed instances.
 
-    `Note: There are many supported methods for deploying the Falcon sensor. The use of the SSM Distributor Package is provided as a convenience for customers and works well as part of a CloudFormation stack.`
+    ::alert[There are many supported methods for deploying the Falcon sensor. The use of the SSM Distributor Package is provided as a convenience for customers and works well as part of a CloudFormation stack.]{header="Note"}
 
   - This method can also be used to protect ECS clusters in EC2 mode.
 
