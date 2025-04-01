@@ -1,4 +1,7 @@
-# All Commands
+---
+title: "All Commands"
+weight: 9
+---
 
 ## Lab 0 - Explore
 

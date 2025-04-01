@@ -1,4 +1,7 @@
-# Introduction
+---
+title: "Introduction"
+weight: 5
+---
 
 Welcome to the CrowdStrike Falcon Cloud Security Workshop!
 
