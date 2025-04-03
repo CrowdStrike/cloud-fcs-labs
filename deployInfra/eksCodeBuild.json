@@ -79,7 +79,7 @@
                             }
                         },
                         {
-                            "Name": "CODEBUILD_SERVICE_ROLE",
+                            "Name": "SERVICE_ROLE",
                             "Value": {
                                 "Ref": "FCSCodebuildRole"
                             }
@@ -106,7 +106,7 @@
                                     "Fn::Sub": "      - cat <<EOF > irsa.yaml\n        apiVersion: eksctl.io/v1alpha5\n        kind: ClusterConfig\n        metadata:\n          name: ${EKSClusterName}\n          region: ${AWS::Region}\n          version: \"${KubernetesVersion}\"\n        iam:\n          withOIDC: true\n          serviceAccounts:\n          - metadata:\n              name: aws-load-balancer-controller\n              namespace: kube-system\n            wellKnownPolicies:\n              awsLoadBalancerController: true\n            roleName: aws-load-balancer-controller\n          - metadata:\n              name: pod-s3-access\n            roleName: fcs-lab-pod-s3-access\n            attachPolicyARNs:\n            - \"arn:aws:iam::aws:policy/AmazonS3FullAccess\"\n        EOF"
                                 },
                                 {
-                                    "Fn::Sub": "      - cat <<EOF > access.yaml\n        - accessPolicies:\n          - accessScope:\n              type: cluster\n            policyARN: arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy\n          principalARN: $CODEBUILD_SERVICE_ROLE\n        EOF"
+                                    "Fn::Sub": "      - cat <<EOF > access.yaml\n        - accessPolicies:\n          - accessScope:\n              type: cluster\n            policyARN: arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy\n          principalARN: $SERVICE_ROLE\n        EOF"
                                 },
                                 {
                                     "Fn::Sub": "      - cat <<EOF > nodegroup.yaml\n        apiVersion: eksctl.io/v1alpha5\n        kind: ClusterConfig\n        metadata:\n          name: ${EKSClusterName}\n          region: ${AWS::Region}\n          version: \"${KubernetesVersion}\"\n        managedNodeGroups:\n          - name: ng-1\n            instanceType: ${WorkerNodeInstanceType}\n            desiredCapacity: 2\n            minSize: 2\n            maxSize: 3\n            privateNetworking: true\n            volumeSize: 100\n            volumeType: gp3\n            volumeEncrypted: true\n            disableIMDSv1: false\n            tags:\n              'eks:cluster-name': ${EKSClusterName}\n            iam:\n              withAddonPolicies:\n                autoScaler: true\n                awsLoadBalancerController: true\n                cloudWatch: true\n        EOF"
@@ -248,51 +248,53 @@
                 },
                 "Runtime": "python3.12",
                 "Code": {
-                    "Fn::Join": [
-                        "\n",
-                        [
-                            "import boto3",
-                            "import logging",
-                            "import sys",
-                            "import json",
-                            "import urllib3",
-                            "",
-                            "logger = logging.getLogger()",
-                            "logger.setLevel(logging.INFO)",
-                            "http = urllib3.PoolManager()",
-                            "",
-                            "",
-                            "codebuild_client = boto3.client('codebuild')",
-                            "",
-                            "# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/cfn-lambda-function-code-cfnresponsemodule.html",
-                            "def handler(event, context):",
-                            "    logger.info('Incoming Event: {0}'.format(event))",
-                            "    response = {}",
-                            "    response['PhysicalResourceId'] = 'hardcodedphyscialid'",
-                            "    response['StackId'] = event['StackId']",
-                            "    response['RequestId'] = event['RequestId']",
-                            "    response['LogicalResourceId'] = event['LogicalResourceId']",
-                            "    cfn_response_url = event['ResponseURL']",
-                            "",
-                            "    if event['RequestType'] == 'Delete':",
-                            "        # return",
-                            "        logger.info('Nothing to do. Request Type : {0}'.format(event['RequestType']))",
-                            "        response['Status'] = 'SUCCESS'",
-                            "",
-                            "    elif event['RequestType'] == 'Create' or event['RequestType'] == 'Update':",
-                            "",
-                            "      try:",
-                            "        codebuild_client.start_build(projectName=event['ResourceProperties']['CodebuildProjectName'])",
-                            "        response['Status'] = 'SUCCESS'",
-                            "",
-                            "      except:",
-                            "        logging.error('Error: {0}'.format(sys.exc_info() ))",
-                            "        response['Status'] = 'SUCCESS'",
-                            "",
-                            "    http.request('PUT', cfn_response_url, body=json.dumps(response).encode('utf-8'), headers={'Content-Type': 'application/json'})",
-                            "    return 'Done'"
+                    "ZipFile": {
+                        "Fn::Join": [
+                            "\n",
+                            [
+                                "import boto3",
+                                "import logging",
+                                "import sys",
+                                "import json",
+                                "import urllib3",
+                                "",
+                                "logger = logging.getLogger()",
+                                "logger.setLevel(logging.INFO)",
+                                "http = urllib3.PoolManager()",
+                                "",
+                                "",
+                                "codebuild_client = boto3.client('codebuild')",
+                                "",
+                                "# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/cfn-lambda-function-code-cfnresponsemodule.html",
+                                "def handler(event, context):",
+                                "    logger.info('Incoming Event: {0}'.format(event))",
+                                "    response = {}",
+                                "    response['PhysicalResourceId'] = 'hardcodedphyscialid'",
+                                "    response['StackId'] = event['StackId']",
+                                "    response['RequestId'] = event['RequestId']",
+                                "    response['LogicalResourceId'] = event['LogicalResourceId']",
+                                "    cfn_response_url = event['ResponseURL']",
+                                "",
+                                "    if event['RequestType'] == 'Delete':",
+                                "        # return",
+                                "        logger.info('Nothing to do. Request Type : {0}'.format(event['RequestType']))",
+                                "        response['Status'] = 'SUCCESS'",
+                                "",
+                                "    elif event['RequestType'] == 'Create' or event['RequestType'] == 'Update':",
+                                "",
+                                "      try:",
+                                "        codebuild_client.start_build(projectName=event['ResourceProperties']['CodebuildProjectName'])",
+                                "        response['Status'] = 'SUCCESS'",
+                                "",
+                                "      except:",
+                                "        logging.error('Error: {0}'.format(sys.exc_info() ))",
+                                "        response['Status'] = 'SUCCESS'",
+                                "",
+                                "    http.request('PUT', cfn_response_url, body=json.dumps(response).encode('utf-8'), headers={'Content-Type': 'application/json'})",
+                                "    return 'Done'"
+                            ]
                         ]
-                    ]
+                    }
                 }
             }
         }
