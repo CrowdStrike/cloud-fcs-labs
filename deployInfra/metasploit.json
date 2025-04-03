@@ -62,7 +62,7 @@
         },
         "LatestKaliAMI": {
             "Type": "AWS::EC2::Image::Id",
-            "Default": "ami-04b4f1a9cf54c11d0"
+            "Default": "ami-0779caf41f9ba54f0"
         }
     },
     "Resources": {
@@ -85,7 +85,39 @@
                 ],
                 "UserData": {
                     "Fn::Base64": {
-                        "Fn::Sub": "#!/bin/bash\nset -x\nexport aws_region=${AWS::Region}\nexport KALI_PUB_IP=$(curl http://169.254.169.254/latest/meta-data/public-ipv4)\nexec 3>&1 4>&2\ntrap 'exec 2>&4 1>&3' 0 1 2 3\nexec 1>/tmp/log.out 2>&1\naws s3 cp s3://${S3Bucket}/${S3Prefix}setup-debian-msploit.sh /tmp/setup-debian-msploit.sh\nchmod +x /tmp/setup-debian-msploit.sh\n/tmp/setup-debian-msploit.sh\naws s3 cp s3://${S3Bucket}/${S3Prefix}start-msploit.sh /home/admin/start-msploit.sh\nchmod +x /home/admin/start-msploit.sh\nmkdir /home/ssm-user\ntouch /home/ssm-user/.bashrc\necho \"sudo su admin\" >> /home/ssm-user/.bashrc\necho \"export AWS_REGION=${AWS::Region}\" | tee -a /home/admin/.bashrc\necho \"export AWS_DEFAULT_REGION=${AWS::Region}\" | tee -a /home/admin/.bashrc\necho \"cd ~\" | tee -a /home/admin/.bashrc\n"
+                        "Fn::Join": [
+                            "\n",
+                            [
+                                "#!/bin/bash",
+                                "set -x",
+                                {
+                                    "Fn::Sub": "export aws_region=${AWS::Region}"
+                                },
+                                "export KALI_PUB_IP=$(curl http://169.254.169.254/latest/meta-data/public-ipv4)",
+                                "exec 3>&1 4>&2",
+                                "trap 'exec 2>&4 1>&3' 0 1 2 3",
+                                "exec 1>/tmp/log.out 2>&1",
+                                {
+                                    "Fn::Sub": "aws s3 cp s3://${S3Bucket}/${S3Prefix}/setup-debian-msploit.sh /tmp/setup-debian-msploit.sh"
+                                },
+                                "chmod +x /tmp/setup-debian-msploit.sh",
+                                "/tmp/setup-debian-msploit.sh",
+                                {
+                                    "Fn::Sub": "aws s3 cp s3://${S3Bucket}/${S3Prefix}/start-msploit.sh /home/admin/start-msploit.sh"
+                                },
+                                "chmod +x /home/admin/start-msploit.sh",
+                                "mkdir /home/ssm-user",
+                                "touch /home/ssm-user/.bashrc",
+                                "echo \"sudo su admin\" >> /home/ssm-user/.bashrc",
+                                {
+                                    "Fn::Sub": "echo \"export AWS_REGION=${AWS::Region}\" | tee -a /home/admin/.bashrc"
+                                },
+                                {
+                                    "Fn::Sub": "echo \"export AWS_DEFAULT_REGION=${AWS::Region}\" | tee -a /home/admin/.bashrc"
+                                },
+                                "echo \"cd ~\" | tee -a /home/admin/.bashrc\n"
+                            ]
+                        ]
                     }
                 },
                 "InstanceType": "m4.large",
