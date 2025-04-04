@@ -79,6 +79,11 @@
             "Description": "CodeBuild Service Role for EKS",
             "Type": "String"
         },
+        "EKSCodeBuildServiceRole": {
+            "Description": "CodeBuild Service Role for EKS",
+            "Type": "String",
+            "Default": "fcsworkshop-admin"
+        },
         "EKSCodeBuildProjectName": {
             "Description": "CodeBuild Project Name for deploying demo webapp to EKS",
             "Type": "String",
@@ -341,13 +346,14 @@
                                     },
                                     "S3ObjectKey": {
                                         "Fn::Join": [
-                                            "/", [
-                                            {
-                                                "Ref": "S3Prefix"
-                                            },
-                                            {
-                                                "Ref": "S3CodeBucketKey"
-                                            }
+                                            "/",
+                                            [
+                                                {
+                                                    "Ref": "S3Prefix"
+                                                },
+                                                {
+                                                    "Ref": "S3CodeBucketKey"
+                                                }
                                             ]
                                         ]
                                     },
@@ -420,7 +426,9 @@
                     }
                 }
             },
-            "DependsOn": ["SensorImportPipeline"]
+            "DependsOn": [
+                "SensorImportPipeline"
+            ]
         },
         "ECRCodeBuildServiceRole": {
             "Type": "AWS::IAM::Role",
@@ -525,7 +533,7 @@
                     "Ref": "ECRCodeBuildProjectName"
                 },
                 "ServiceRole": {
-                    "Ref": "ECRCodeBuildServiceRole"
+                    "Ref": "EKSCodeBuildServiceRole"
                 },
                 "Source": {
                     "Type": "CODEPIPELINE",
@@ -561,7 +569,7 @@
                         {
                             "Name": "FALCON_CLIENT_ID",
                             "Value": {
-								"Fn::Sub": [
+                                "Fn::Sub": [
                                     "${arn}:FalconClientId",
                                     {
                                         "arn": {
@@ -570,12 +578,12 @@
                                     }
                                 ]
                             },
-                            "Type": "SECRETS_MANAGER"                         
+                            "Type": "SECRETS_MANAGER"
                         },
                         {
                             "Name": "FALCON_CLIENT_SECRET",
                             "Value": {
-								"Fn::Sub": [
+                                "Fn::Sub": [
                                     "${arn}:FalconSecret",
                                     {
                                         "arn": {
@@ -616,7 +624,7 @@
                     "Ref": "EKSCodeBuildProjectName"
                 },
                 "ServiceRole": {
-                    "Ref": "ECRCodeBuildServiceRole"
+                    "Ref": "EKSCodeBuildServiceRole"
                 },
                 "Source": {
                     "Type": "CODEPIPELINE",
@@ -722,13 +730,14 @@
                                     },
                                     "S3ObjectKey": {
                                         "Fn::Join": [
-                                            "/", [
-                                            {
-                                                "Ref": "S3Prefix"
-                                            },
-                                            {
-                                                "Ref": "S3CodeBucketKey"
-                                            }
+                                            "/",
+                                            [
+                                                {
+                                                    "Ref": "S3Prefix"
+                                                },
+                                                {
+                                                    "Ref": "S3CodeBucketKey"
+                                                }
                                             ]
                                         ]
                                     },
@@ -809,7 +818,7 @@
                     "Ref": "SensorCodeBuildProjectName"
                 },
                 "ServiceRole": {
-                    "Ref": "ECRCodeBuildServiceRole"
+                    "Ref": "EKSCodeBuildServiceRole"
                 },
                 "Source": {
                     "Type": "CODEPIPELINE",
@@ -828,7 +837,7 @@
                         {
                             "Name": "FALCON_CLIENT_ID",
                             "Value": {
-								"Fn::Sub": [
+                                "Fn::Sub": [
                                     "${arn}:FalconClientId",
                                     {
                                         "arn": {
@@ -856,7 +865,7 @@
                         {
                             "Name": "FALCON_CID",
                             "Value": {
-								"Fn::Sub": [
+                                "Fn::Sub": [
                                     "${arn}:FalconCID",
                                     {
                                         "arn": {
@@ -870,7 +879,7 @@
                         {
                             "Name": "CS_CLOUD",
                             "Value": {
-								"Fn::Sub": [
+                                "Fn::Sub": [
                                     "${arn}:CSCloud",
                                     {
                                         "arn": {
@@ -909,7 +918,7 @@
                     "Ref": "DeployFalconCodeBuildProjectName"
                 },
                 "ServiceRole": {
-                    "Ref": "ECRCodeBuildServiceRole"
+                    "Ref": "EKSCodeBuildServiceRole"
                 },
                 "Source": {
                     "Type": "CODEPIPELINE",
@@ -949,7 +958,7 @@
                         {
                             "Name": "FALCON_CLIENT_ID",
                             "Value": {
-								"Fn::Sub": [
+                                "Fn::Sub": [
                                     "${arn}:FalconClientId",
                                     {
                                         "arn": {
@@ -958,12 +967,12 @@
                                     }
                                 ]
                             },
-                            "Type": "SECRETS_MANAGER"                         
+                            "Type": "SECRETS_MANAGER"
                         },
                         {
                             "Name": "FALCON_CLIENT_SECRET",
                             "Value": {
-								"Fn::Sub": [
+                                "Fn::Sub": [
                                     "${arn}:FalconSecret",
                                     {
                                         "arn": {
@@ -977,7 +986,7 @@
                         {
                             "Name": "FALCON_CID",
                             "Value": {
-								"Fn::Sub": [
+                                "Fn::Sub": [
                                     "${arn}:FalconCID",
                                     {
                                         "arn": {
@@ -991,7 +1000,7 @@
                         {
                             "Name": "CS_CLOUD",
                             "Value": {
-								"Fn::Sub": [
+                                "Fn::Sub": [
                                     "${arn}:CSCloud",
                                     {
                                         "arn": {
@@ -1067,13 +1076,14 @@
                                     },
                                     "S3ObjectKey": {
                                         "Fn::Join": [
-                                            "/", [
-                                            {
-                                                "Ref": "S3Prefix"
-                                            },
-                                            {
-                                                "Ref": "S3CodeBucketKey"
-                                            }
+                                            "/",
+                                            [
+                                                {
+                                                    "Ref": "S3Prefix"
+                                                },
+                                                {
+                                                    "Ref": "S3CodeBucketKey"
+                                                }
                                             ]
                                         ]
                                     },
@@ -1127,7 +1137,7 @@
             "Properties": {
                 "Name": "vulnerable-image-build",
                 "ServiceRole": {
-                    "Ref": "ECRCodeBuildServiceRole"
+                    "Ref": "EKSCodeBuildServiceRole"
                 },
                 "Source": {
                     "Type": "CODEPIPELINE",
@@ -1163,7 +1173,7 @@
                         {
                             "Name": "FALCON_CLIENT_ID",
                             "Value": {
-								"Fn::Sub": [
+                                "Fn::Sub": [
                                     "${arn}:FalconClientId",
                                     {
                                         "arn": {
@@ -1172,12 +1182,12 @@
                                     }
                                 ]
                             },
-                            "Type": "SECRETS_MANAGER"                          
+                            "Type": "SECRETS_MANAGER"
                         },
                         {
                             "Name": "FALCON_CLIENT_SECRET",
                             "Value": {
-								"Fn::Sub": [
+                                "Fn::Sub": [
                                     "${arn}:FalconSecret",
                                     {
                                         "arn": {
@@ -1191,7 +1201,7 @@
                         {
                             "Name": "CS_CLOUD",
                             "Value": {
-								"Fn::Sub": [
+                                "Fn::Sub": [
                                     "${arn}:CSCloud",
                                     {
                                         "arn": {
@@ -1348,99 +1358,111 @@
                 }
             }
         },
-
-        
         "S3EventRole": {
             "Type": "AWS::IAM::Role",
             "Properties": {
-              "AssumeRolePolicyDocument": {
-                "Version": "2012-10-17",
-                "Statement": [
-                  {
-                    "Effect": "Allow",
-                    "Principal": {
-                      "Service": [
-                        "events.amazonaws.com"
-                      ]
-                    },
-                    "Action": "sts:AssumeRole"
-                  }
-                ]
-              },
-              "Path": "/",
-              "Policies": [
-                {
-                  "PolicyName": "eb-pipeline-execution",
-                  "PolicyDocument": {
+                "AssumeRolePolicyDocument": {
                     "Version": "2012-10-17",
                     "Statement": [
-                      {
-                        "Effect": "Allow",
-                        "Action": "codepipeline:StartPipelineExecution",
-                        "Resource": [
-                            {"Fn::Sub":  "arn:${AWS::Partition}:codepipeline:${AWS::Region}:${AWS::AccountId}:webapp-deploy-pipeline"},
-                            {"Fn::Sub":  "arn:${AWS::Partition}:codepipeline:${AWS::Region}:${AWS::AccountId}:sensor-import-pipeline"},
-                            {"Fn::Sub":  "arn:${AWS::Partition}:codepipeline:${AWS::Region}:${AWS::AccountId}:vulnerable-image-pipeline"}
-                        ]
-                      }
+                        {
+                            "Effect": "Allow",
+                            "Principal": {
+                                "Service": [
+                                    "events.amazonaws.com"
+                                ]
+                            },
+                            "Action": "sts:AssumeRole"
+                        }
                     ]
-                  }
-                }
-              ]
+                },
+                "Path": "/",
+                "Policies": [
+                    {
+                        "PolicyName": "eb-pipeline-execution",
+                        "PolicyDocument": {
+                            "Version": "2012-10-17",
+                            "Statement": [
+                                {
+                                    "Effect": "Allow",
+                                    "Action": "codepipeline:StartPipelineExecution",
+                                    "Resource": [
+                                        {
+                                            "Fn::Sub": "arn:${AWS::Partition}:codepipeline:${AWS::Region}:${AWS::AccountId}:webapp-deploy-pipeline"
+                                        },
+                                        {
+                                            "Fn::Sub": "arn:${AWS::Partition}:codepipeline:${AWS::Region}:${AWS::AccountId}:sensor-import-pipeline"
+                                        },
+                                        {
+                                            "Fn::Sub": "arn:${AWS::Partition}:codepipeline:${AWS::Region}:${AWS::AccountId}:vulnerable-image-pipeline"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    }
+                ]
             }
         },
         "EventRule": {
             "Type": "AWS::Events::Rule",
             "Properties": {
-            "EventPattern": {
-                "source": [
-                "aws.s3"
-                ],
-                "detail-type": [
-                "Object Created"
-                ],
-                "detail": {
-                    "bucket": {
-                        "name": [
-                            { "Ref": "S3CodeBucketName"}
-                        ]
+                "EventPattern": {
+                    "source": [
+                        "aws.s3"
+                    ],
+                    "detail-type": [
+                        "Object Created"
+                    ],
+                    "detail": {
+                        "bucket": {
+                            "name": [
+                                {
+                                    "Ref": "S3CodeBucketName"
+                                }
+                            ]
+                        }
                     }
-                }
-            },
-            "Name": "EnabledS3SourceRule",
-            "State": "ENABLED",
-            "Targets": [
-                {
-                    "Arn": {"Fn::Sub":  "arn:${AWS::Partition}:codepipeline:${AWS::Region}:${AWS::AccountId}:webapp-deploy-pipeline"},
-                    "RoleArn": {
-                        "Fn::GetAtt": [
-                        "S3EventRole",
-                        "Arn"
-                        ]
-                    },
-                    "Id": "codepipeline1"
                 },
-                {
-                    "Arn": {"Fn::Sub":  "arn:${AWS::Partition}:codepipeline:${AWS::Region}:${AWS::AccountId}:sensor-import-pipeline"},
-                    "RoleArn": {
-                        "Fn::GetAtt": [
-                        "S3EventRole",
-                        "Arn"
-                        ]
+                "Name": "EnabledS3SourceRule",
+                "State": "ENABLED",
+                "Targets": [
+                    {
+                        "Arn": {
+                            "Fn::Sub": "arn:${AWS::Partition}:codepipeline:${AWS::Region}:${AWS::AccountId}:webapp-deploy-pipeline"
+                        },
+                        "RoleArn": {
+                            "Fn::GetAtt": [
+                                "S3EventRole",
+                                "Arn"
+                            ]
+                        },
+                        "Id": "codepipeline1"
                     },
-                    "Id": "codepipeline2"
-                },
-                {
-                    "Arn": {"Fn::Sub":  "arn:${AWS::Partition}:codepipeline:${AWS::Region}:${AWS::AccountId}:vulnerable-image-pipeline"},
-                    "RoleArn": {
-                        "Fn::GetAtt": [
-                        "S3EventRole",
-                        "Arn"
-                        ]
+                    {
+                        "Arn": {
+                            "Fn::Sub": "arn:${AWS::Partition}:codepipeline:${AWS::Region}:${AWS::AccountId}:sensor-import-pipeline"
+                        },
+                        "RoleArn": {
+                            "Fn::GetAtt": [
+                                "S3EventRole",
+                                "Arn"
+                            ]
+                        },
+                        "Id": "codepipeline2"
                     },
-                    "Id": "codepipeline3"
-                }
-            ]
+                    {
+                        "Arn": {
+                            "Fn::Sub": "arn:${AWS::Partition}:codepipeline:${AWS::Region}:${AWS::AccountId}:vulnerable-image-pipeline"
+                        },
+                        "RoleArn": {
+                            "Fn::GetAtt": [
+                                "S3EventRole",
+                                "Arn"
+                            ]
+                        },
+                        "Id": "codepipeline3"
+                    }
+                ]
             }
         }
     }
