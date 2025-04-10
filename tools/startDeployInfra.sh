@@ -33,6 +33,8 @@ aws s3api create-bucket --bucket $S3Bucket --region $AWS_REGION
 echo
 echo "Copying FCS-lab files to $S3Bucket"   
 aws s3 cp ../ s3://${S3Bucket}/ --recursive --exclude ".git/*" --exclude ".DS_Store" --exclude ".gitignore" 
+aws s3api put-bucket-versioning --bucket $S3Bucket --versioning-configuration Status=Enabled
+aws s3api put-bucket-notification-configuration --bucket $S3Bucket --notification-configuration='{ "EventBridgeConfiguration": {} }'
 
 response=$(aws cloudformation create-stack --stack-name $StackName --template-url https://${S3Bucket}.s3.amazonaws.com/${S3Prefix}/${TemplateName} --region $AWS_REGION --disable-rollback \
 --capabilities CAPABILITY_NAMED_IAM CAPABILITY_IAM CAPABILITY_AUTO_EXPAND) 

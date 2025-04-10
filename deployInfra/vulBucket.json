@@ -1,0 +1,178 @@
+{
+    "AWSTemplateFormatVersion": "2010-09-09",
+    "Parameters": {
+        "EnvAlias": {
+            "Type": "String",
+            "Default": ""
+        },
+        "EnvHash": {
+            "Type": "String",
+            "Default": ""
+        },
+        "S3Bucket": {
+            "Type": "String",
+            "Default": ""
+        },
+        "S3Prefix": {
+            "Type": "String",
+            "Default": ""
+        },
+        "SourceObjects": {
+            "Type": "CommaDelimitedList",
+            "Default": "confidential-data.txt"
+        }
+    },
+    "Resources": {
+        "ConfidentialLoggingBucketParameter": {
+            "Type": "AWS::SSM::Parameter",
+            "Properties": {
+                "Description": "set logging S3bucket parameter for stack deletion cleanup",
+                "Name": {
+                    "Fn::Sub": "psLoggingBucket-${EnvHash}"
+                },
+                "Type": "String",
+                "Value": {
+                    "Ref": "ConfidentialLoggingBucket"
+                }
+            }
+        },
+        "ConfidentialBucket": {
+            "Type": "AWS::S3::Bucket",
+            "Properties": {
+                "AccessControl": "Private",
+                "LoggingConfiguration": {
+                    "DestinationBucketName": {
+                        "Ref": "ConfidentialLoggingBucket"
+                    },
+                    "LogFilePrefix": "testing-logs"
+                }
+            }
+        },
+        "ConfidentialLoggingBucket": {
+            "Type": "AWS::S3::Bucket",
+            "Properties": {
+                "AccessControl": "LogDeliveryWrite",
+                "OwnershipControls": {
+                    "Rules": [
+                        {
+                            "ObjectOwnership": "BucketOwnerPreferred"
+                        }
+                    ]
+                }
+            }
+        },
+        "CopyRole": {
+            "Type": "AWS::IAM::Role",
+            "Properties": {
+                "Path": "/",
+                "AssumeRolePolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Effect": "Allow",
+                            "Principal": {
+                                "Service": "lambda.amazonaws.com"
+                            },
+                            "Action": "sts:AssumeRole"
+                        }
+                    ]
+                },
+                "ManagedPolicyArns": [
+                    {
+                        "Fn::Sub": "arn:${AWS::Partition}:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+                    }
+                ],
+                "Policies": [
+                    {
+                        "PolicyName": "ConfigPolicy",
+                        "PolicyDocument": {
+                            "Version": "2012-10-17",
+                            "Statement": [
+                                {
+                                    "Sid": "S3Get",
+                                    "Effect": "Allow",
+                                    "Action": [
+                                        "s3:GetObject"
+                                    ],
+                                    "Resource": {
+                                        "Fn::Sub": "arn:${AWS::Partition}:s3:::${S3Bucket}/${S3Prefix}*"
+                                    }
+                                },
+                                {
+                                    "Sid": "S3Put",
+                                    "Effect": "Allow",
+                                    "Action": [
+                                        "s3:PutObject",
+                                        "s3:DeleteObject"
+                                    ],
+                                    "Resource": {
+                                        "Fn::Sub": "arn:${AWS::Partition}:s3:::${ConfidentialBucket}/*"
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                ]
+            }
+        },
+        "CopyFiles": {
+            "Type": "AWS::CloudFormation::CustomResource",
+            "Properties": {
+                "ServiceToken": {
+                    "Fn::GetAtt": [
+                        "CopyFilesFunction",
+                        "Arn"
+                    ]
+                },
+                "DestRegion": {
+                    "Ref": "AWS::Region"
+                },
+                "DestBucket": {
+                    "Ref": "ConfidentialBucket"
+                },
+                "SourceBucket": {
+                    "Fn::Join": [
+                        "/",
+                        [
+                            {
+                                "Ref": "S3Bucket"
+                            },
+                            {
+                                "Ref": "S3Prefix"
+                            }
+                        ]
+                    ]
+                },
+                "Objects": {
+                    "Ref": "SourceObjects"
+                }
+            }
+        },
+        "CopyFilesFunction": {
+            "Type": "AWS::Lambda::Function",
+            "Properties": {
+                "Description": "Copies objects from a source S3 bucket to a destination",
+                "Handler": "index.handler",
+                "Runtime": "python3.8",
+                "Role": {
+                    "Fn::GetAtt": [
+                        "CopyRole",
+                        "Arn"
+                    ]
+                },
+                "Timeout": 240,
+                "Code": {
+                    "ZipFile": "import json\nimport logging\nimport threading\nimport boto3\nimport cfnresponse\ndef copy_objects(source_bucket, dest_bucket, objects):\n    s3 = boto3.client('s3')\n    for o in objects:\n        copy_source = {\n            'Bucket': source_bucket,\n            'Key': o\n        }\n        s3.copy_object(CopySource=copy_source, Bucket=dest_bucket, Key=o)\ndef delete_objects(bucket, objects):\n    s3 = boto3.client('s3')\n    objects = {'Objects': [{'Key': o} for o in objects]}\n    s3.delete_objects(Bucket=bucket, Delete=objects)\ndef timeout(event, context):\n    logging.error('Execution is about to time out, sending failure response to CloudFormation')\n    cfnresponse.send(event, context, cfnresponse.FAILED, {}, None)\ndef handler(event, context):\n    # make sure we send a failure to CloudFormation if the function is going to timeout\n    timer = threading.Timer((context.get_remaining_time_in_millis() / 1000.00) - 0.5, timeout, args=[event, context])\n    timer.start()\n    print('Received event: %s' % json.dumps(event))\n    status = cfnresponse.SUCCESS\n    try:\n        source_bucket = event['ResourceProperties']['SourceBucket']\n        source_bucket = source_bucket.rstrip('/')\n        dest_bucket = event['ResourceProperties']['DestBucket']\n        objects = event['ResourceProperties']['Objects']\n        if event['RequestType'] == 'Delete':\n            delete_objects(dest_bucket, objects)\n        else:\n            copy_objects(source_bucket, dest_bucket, objects)\n    except Exception as e:\n        logging.error('Exception: %s' % e, exc_info=True)\n        status = cfnresponse.FAILED\n    finally:\n        timer.cancel()\n        cfnresponse.send(event, context, status, {}, None)\n"
+                }
+            }
+        }
+    },
+    "Outputs": {
+        "BucketName": {
+            "Value": {
+                "Ref": "ConfidentialBucket"
+            },
+            "Description": "Name of the sample Amazon S3 bucket with a logging configuration."
+        }
+    }
+}

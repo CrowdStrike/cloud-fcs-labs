@@ -16,7 +16,7 @@
 # Check shell outputs and CloudFormation stack status to confirm that all commands complete successfully.
 
 env_up(){
-# EnvHash=$(LC_ALL=C tr -dc a-z0-9 </dev/urandom | head -c 5)
+EnvHash=$(LC_ALL=C tr -dc a-z0-9 </dev/urandom | head -c 5)
 # S3Bucket=fcs-stack-${EnvHash}
 AWS_REGION='us-east-1'
 S3Prefix='deployFalcon'
@@ -24,6 +24,9 @@ TemplateName='deployFalcon.yaml'
 tmpEnvHash=$(aws ssm get-parameter --name psEnvHash --query 'Parameter.Value' --output text) 
 tmpS3Bucket=$(aws ssm get-parameter --name psS3Bucket --query 'Parameter.Value' --output text)
 StackName=fcslab-falconstack-${tmpEnvHash}
+SecretStackName=fcslab-falconsecretstack-${tmpEnvHash}
+SecretName=crowdstrike-falcon-api-${EnvHash}
+SecretTemplateName='storeSecrets.yaml'
 
    echo 
    echo "Welcome to the Falcon Cloud Security Workshop - Falcon Sensor deployment and AWS account CSPM registration $NC"
@@ -57,33 +60,70 @@ StackName=fcslab-falconstack-${tmpEnvHash}
    read -p "Generate cloud IoA and IoM sample detections [true]: " IOAIOMDeploy
    IOAIOMDeploy=${IOAIOMDeploy:=true}                                                                                                                                                                                                       
 
-cat <<EOF > tmpsecret.json
-{
-  "FalconClientId":"$CLIENT_ID", 
-  "FalconSecret":"$CLIENT_SECRET",
-  "FalconCID":"$CS_CID" ,
-  "CSCloud":"$CS_CLOUD" 
-}
-EOF
+# cat <<EOF > tmpsecret.json
+# {
+#   "FalconClientId":"$CLIENT_ID", 
+#   "FalconSecret":"$CLIENT_SECRET",
+#   "FalconCID":"$CS_CID" ,
+#   "CSCloud":"$CS_CLOUD" 
+# }
+# EOF
 
-tmpFalconSecret=$(aws secretsmanager list-secrets --query 'SecretList[?Name==`crowdstrike-falcon-api`].Name' --output text)
-if [[ "$tmpFalconSecret" == 'crowdstrike-falcon-api' ]] 
-then
-  aws secretsmanager put-secret-value --secret-id crowdstrike-falcon-api --secret-string file://tmpsecret.json
-  FalconSecretArn=$(aws secretsmanager list-secrets --query 'SecretList[?Name==`crowdstrike-falcon-api`].ARN' --output text)
-  aws ssm put-parameter --name=psFalconSecretArn --value="${FalconSecretArn}" --region=$AWS_REGION --type=String --overwrite
-else
-  FalconSecretArn=$(aws secretsmanager create-secret --name crowdstrike-falcon-api --query 'ARN' --output text) 
-  aws secretsmanager put-secret-value --secret-id crowdstrike-falcon-api --secret-string file://tmpsecret.json 
-  aws ssm put-parameter --name=psFalconSecretArn --value="${FalconSecretArn}" --region=$AWS_REGION --type=String --overwrite 
+# tmpFalconSecret=$(aws secretsmanager list-secrets --query 'SecretList[?Name==`crowdstrike-falcon-api`].Name' --output text)
+# if [[ "$tmpFalconSecret" == 'crowdstrike-falcon-api' ]] 
+# then
+#   aws secretsmanager put-secret-value --secret-id crowdstrike-falcon-api --secret-string file://tmpsecret.json
+#   FalconSecretArn=$(aws secretsmanager list-secrets --query 'SecretList[?Name==`crowdstrike-falcon-api`].ARN' --output text)
+#   aws ssm put-parameter --name=psFalconSecretArn --value="${FalconSecretArn}" --region=$AWS_REGION --type=String --overwrite
+# else
+#   FalconSecretArn=$(aws secretsmanager create-secret --name crowdstrike-falcon-api --query 'ARN' --output text) 
+#   aws secretsmanager put-secret-value --secret-id crowdstrike-falcon-api --secret-string file://tmpsecret.json 
+#   aws ssm put-parameter --name=psFalconSecretArn --value="${FalconSecretArn}" --region=$AWS_REGION --type=String --overwrite 
+# fi
+
+# rm tmpsecret.json
+
+echo " "
+response=$(aws cloudformation create-stack --stack-name $SecretStackName --template-url https://${tmpS3Bucket}.s3.amazonaws.com/${S3Prefix}/${SecretTemplateName} --region $AWS_REGION --disable-rollback \
+--parameters \
+ParameterKey=FalconSecretName,ParameterValue=$SecretName \
+ParameterKey=FalconClientId,ParameterValue=$CLIENT_ID \
+ParameterKey=FalconClientSecret,ParameterValue=$CLIENT_SECRET \
+ParameterKey=FalconCID,ParameterValue=$CS_CID \
+ParameterKey=CrowdStrikeCloud,ParameterValue=$CS_CLOUD)
+
+# if [[ "$response" == *"StackId"* ]]
+# then
+# echo "The Cloudformation stack for Falcon Secret will take 1-5 minutes to complete"
+# echo 
+# echo "Check the status at any time with the command"
+# echo 
+# echo "aws cloudformation describe-stacks --stack-name $SecretStackName --region $AWS_REGION"
+# else
+# echo "Stack creation failed. Check CloudFormation logs for details, or try:"
+# echo 
+# echo "cloudformation describe-stacks --stack-name $SecretStackName --region $AWS_REGION}"
+# fi
+
+echo "Waiting for $SecretStackName stack creation."
+
+aws cloudformation wait stack-create-complete \
+--region ${AWS_REGION}  \
+--stack-name ${SecretStackName}
+status=$?
+
+if [[ ${status} -ne 0 ]] ; then
+    # Waiter encountered a failure state.
+    echo "Stack $SecretStackName creation failed. AWS error code is $status"
+
+    exit ${status}
 fi
-
-rm tmpsecret.json
 
 echo " "
 response=$(aws cloudformation create-stack --stack-name $StackName --template-url https://${tmpS3Bucket}.s3.amazonaws.com/${S3Prefix}/${TemplateName} --region $AWS_REGION --disable-rollback \
 --capabilities CAPABILITY_NAMED_IAM CAPABILITY_IAM CAPABILITY_AUTO_EXPAND \
 --parameters \
+ParameterKey=FalconSecretName,ParameterValue=$SecretName \
 ParameterKey=DeployCSPM,ParameterValue=$CSPMDeploy \
 ParameterKey=DeployCSPMSampleDetections,ParameterValue=$IOAIOMDeploy)
 
@@ -98,7 +138,7 @@ echo "aws cloudformation describe-stacks --stack-name $StackName --region $AWS_R
 else
 echo "Stack creation failed. Check CloudFormation logs for details, or try:"
 echo 
-echo "cloudformation describe-stacks --stack-name $StackName --region $AWS_REGION}"
+echo "cloudformation describe-stacks --stack-name $StackName --region $AWS_REGION"
 fi
  
 }

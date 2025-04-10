@@ -1,0 +1,300 @@
+{
+    "AWSTemplateFormatVersion": "2010-09-09",
+    "Description": "Creates shared IAM resources.",
+    "Parameters": {
+        "EnvAlias": {
+            "Type": "String",
+            "Default": ""
+        },
+        "EnvHash": {
+            "Type": "String",
+            "Default": ""
+        },
+        "S3Bucket": {
+            "Type": "String",
+            "Default": ""
+        }
+    },
+    "Resources": {
+        "EKSCodeBuildServiceRole": {
+            "Type": "AWS::IAM::Role",
+            "Properties": {
+                "AssumeRolePolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Effect": "Allow",
+                            "Action": [
+                                "sts:AssumeRole"
+                            ],
+                            "Principal": {
+                                "Service": [
+                                    "codebuild.amazonaws.com",
+                                    "eks.amazonaws.com"
+                                ]
+                            }
+                        }
+                    ]
+                }
+            }
+        },
+        "EKSCodeBuildServicePolicy": {
+            "Type": "AWS::IAM::Policy",
+            "Properties": {
+                "PolicyName": "ECRCodeBuildServicePolicy",
+                "Roles": [
+                    {
+                        "Ref": "EKSCodeBuildServiceRole"
+                    }
+                ],
+                "PolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Effect": "Allow",
+                            "Action": [
+                                "logs:CreateLogGroup",
+                                "logs:CreateLogStream",
+                                "logs:PutLogEvents"
+                            ],
+                            "Resource": "arn:aws:logs:*:*:*"
+                        },
+                        {
+                            "Effect": "Allow",
+                            "Action": [
+                                "s3:GetObject",
+                                "s3:GetObjectVersion",
+                                "s3:PutObject"
+                            ],
+                            "Resource": [
+                                "*"
+                            ]
+                        },
+                        {
+                            "Effect": "Allow",
+                            "Action": [
+                                "ecr:*"
+                            ],
+                            "Resource": [
+                                "*"
+                            ]
+                        },
+                        {
+                            "Effect": "Allow",
+                            "Action": [
+                                "eks:DescribeCluster",
+                                "eks:Describe"
+                            ],
+                            "Resource": [
+                                "*"
+                            ]
+                        }
+                    ]
+                }
+            }
+        },
+        "BastionRole": {
+            "Type": "AWS::IAM::Role",
+            "Metadata": {
+                "cfn-lint": {
+                    "config": {
+                        "ignore_checks": [
+                            "EIAMPolicyWildcardResource"
+                        ],
+                        "ignore_reasons": {
+                            "EIAMPolicyWildcardResource": "resource does not exist at time of policy creation, so it's address is unkown"
+                        }
+                    }
+                }
+            },
+            "Properties": {
+                "AssumeRolePolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Effect": "Allow",
+                            "Principal": {
+                                "Service": {
+                                    "Fn::Sub": "ec2.${AWS::URLSuffix}"
+                                }
+                            },
+                            "Action": "sts:AssumeRole"
+                        }
+                    ]
+                },
+                "Policies": [
+                    {
+                        "PolicyName": "EKSAccess",
+                        "PolicyDocument": {
+                            "Version": "2012-10-17",
+                            "Statement": [
+                                {
+                                    "Effect": "Allow",
+                                    "Action": "s3:GetObject",
+                                    "Resource": {
+                                        "Fn::Sub": "arn:${AWS::Partition}:s3:::${S3Bucket}/*"
+                                    }
+                                },
+                                {
+                                    "Effect": "Allow",
+                                    "Action": [
+                                        "logs:CreateLogStream",
+                                        "logs:GetLogEvents",
+                                        "logs:PutLogEvents",
+                                        "logs:DescribeLogGroups",
+                                        "logs:DescribeLogStreams",
+                                        "logs:PutRetentionPolicy",
+                                        "logs:PutMetricFilter",
+                                        "logs:CreateLogGroup"
+                                    ],
+                                    "Resource": {
+                                        "Fn::Sub": "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:*:*"
+                                    }
+                                },
+                                {
+                                    "Effect": "Allow",
+                                    "Action": [
+                                        "ec2:AssociateAddress",
+                                        "ec2:Describe*",
+                                        "ecr:List*",
+                                        "eks:List*",
+                                        "eks:Describe*",
+                                        "codebuild:*",
+                                        "codepipeline:*"
+                                    ],
+                                    "Resource": "*"
+                                },
+                                {
+                                    "Effect": "Allow",
+                                    "Action": [
+                                        "ecr:DescribeImageScanFindings",
+                                        "ecr:StartImageScan",
+                                        "ecr:GetLifecyclePolicyPreview",
+                                        "ecr:GetDownloadUrlForLayer",
+                                        "ecr:PutImageScanningConfiguration",
+                                        "ecr:DescribeImageReplicationStatus",
+                                        "ecr:ListTagsForResource",
+                                        "ecr:UploadLayerPart",
+                                        "ecr:BatchDeleteImage",
+                                        "ecr:ListImages",
+                                        "ecr:BatchGetRepositoryScanningConfiguration",
+                                        "ecr:PutImage",
+                                        "ecr:UntagResource",
+                                        "ecr:BatchGetImage",
+                                        "ecr:CompleteLayerUpload",
+                                        "ecr:DescribeImages",
+                                        "ecr:TagResource",
+                                        "ecr:DescribeRepositories",
+                                        "ecr:BatchCheckLayerAvailability",
+                                        "ecr:GetRepositoryPolicy",
+                                        "ecr:GetLifecyclePolicy"
+                                    ],
+                                    "Resource": {
+                                        "Fn::Sub": "arn:aws:ecr:*:${AWS::AccountId}:repository/*"
+                                    }
+                                },
+                                {
+                                    "Effect": "Allow",
+                                    "Action": [
+                                        "ecr:GetRegistryPolicy",
+                                        "ecr:BatchImportUpstreamImage",
+                                        "ecr:CreateRepository",
+                                        "ecr:DescribeRegistry",
+                                        "ecr:GetAuthorizationToken",
+                                        "ecr:GetRegistryScanningConfiguration"
+                                    ],
+                                    "Resource": {
+                                        "Fn::Sub": "arn:aws:ecr:*:${AWS::AccountId}:*"
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                ],
+                "ManagedPolicyArns": [
+                    {
+                        "Fn::Sub": "arn:${AWS::Partition}:iam::aws:policy/AmazonSSMManagedInstanceCore"
+                    },
+                    {
+                        "Fn::Sub": "arn:${AWS::Partition}:iam::aws:policy/CloudWatchAgentServerPolicy"
+                    },
+                    {
+                        "Fn::Sub": "arn:${AWS::Partition}:iam::aws:policy/AmazonS3FullAccess"
+                    }
+                ]
+            }
+        },
+        "FCSWorkshopRole": {
+            "Type": "AWS::IAM::Role",
+            "Properties": {
+                "RoleName": "fcsworkshop-admin",
+                "AssumeRolePolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Effect": "Allow",
+                            "Principal": {
+                                "Service": [
+                                    "ec2.amazonaws.com",
+                                    "codebuild.amazonaws.com"
+                                ],
+                                "AWS": {
+                                    "Fn::Sub": "arn:aws:iam::${AWS::AccountId}:root"
+                                }
+                            },
+                            "Action": [
+                                "sts:AssumeRole"
+                            ]
+                        }
+                    ]
+                },
+                "ManagedPolicyArns": [
+                    "arn:aws:iam::aws:policy/AdministratorAccess"
+                ]
+            }
+        },
+        "FCSWorkshopInstanceProfile": {
+            "Type": "AWS::IAM::InstanceProfile",
+            "DependsOn": [
+                "FCSWorkshopRole"
+            ],
+            "Properties": {
+                "Path": "/",
+                "Roles": [
+                    "fcsworkshop-admin"
+                ]
+            }
+        }
+    },
+    "Outputs": {
+        "EKSCodeBuildServiceRoleArn": {
+            "Value": {
+                "Fn::GetAtt": [
+                    "EKSCodeBuildServiceRole",
+                    "Arn"
+                ]
+            },
+            "Export": {
+                "Name": "EKSCodeBuildServiceRoleArn"
+            }
+        },
+        "BastionHostRole": {
+            "Description": "Bastion IAM role name.",
+            "Value": {
+                "Ref": "BastionRole"
+            }
+        },
+        "FCSRole": {
+            "Description": "FCS role",
+            "Value": {
+                "Ref": "FCSWorkshopRole"
+            }
+        },
+        "FCSInstanceProfile": {
+            "Description": "FCS Instance Profile",
+            "Value": {
+                "Ref": "FCSWorkshopInstanceProfile"
+            }
+        }
+    }
+}
