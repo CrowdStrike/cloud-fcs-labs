@@ -10,7 +10,7 @@ function setup_environment_variables() {
 function install_kubernetes_client_tools() {
     printf "\nInstall K8s Client Tools"
     mkdir -p /usr/local/bin/
-    curl --retry 5 -o kubectl https://s3.us-west-2.amazonaws.com/amazon-eks/1.27.6/2023-10-17/bin/linux/amd64/kubectl
+    curl --retry 5 -o kubectl https://s3.us-west-2.amazonaws.com/amazon-eks/1.32.0/2025-01-10/bin/linux/amd64/kubectl
     chmod +x ./kubectl
     mv ./kubectl /usr/local/bin/
     mkdir -p /root/bin
