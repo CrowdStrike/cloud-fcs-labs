@@ -5,7 +5,7 @@
         "KubernetesVersion": {
             "Description": "Kubernetes version",
             "Type": "String",
-            "Default": "1.28"
+            "Default": "1.32"
         },
         "EKSClusterName": {
             "Description": "Name of EKS Cluster",
