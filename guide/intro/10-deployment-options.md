@@ -1,6 +1,6 @@
 # Deployment Options
 
-Cloud architecture natively supports resiliency, scale, and agility by leveraging Infrastructure-as-Code (IaC) and GitOps as primary mechanisms for deploying applications and resources. Compared to manual or ad-hoc procedures, IaC is less error-prone, may be triggered in response to events in the environment, and can deploy and build more quickly. While it can take a bit longer to learn to use IaC tools and to convert manual runbooks to actual code, IaC templates can then be used to trigger builds repeatedly in a fraction of the time. Also, improvements are incorporated into the templates which can be used to update existing deployments, and to assure that all future deployments follow a standard configuration.
+Cloud architecture natively supports resiliency, scale, and agility by leveraging Infrastructure-as-Code (IaC) and GitOps as primary mechanisms for deploying applications and resources. Compared to manual or ad-hoc procedures, IaC is less error-prone, may be triggered in response to events in the environment, and can deploy and build more quickly. While it can take a bit longer to learn to use IaC tools and to convert manual runbooks to actual code, IaC templates can then be used to trigger builds repeatedly in a fraction of the time. Also, improvements are incorporated into the templates which can be used to update existing deployments, and to ensure that all future deployments follow a standard configuration.
 
 Falcon Cloud Security encompasses several components which require separate deployment strategies, nearly all of which can be accomplished using Infrastructure-as-Code. The IaC templates used to build the CrowdStrike Falcon Cloud Security labs on AWS Workshop Studio are primarily written in CloudFormation with additional Bash, Python, and Kubernetes YAML manifests, all of which are provided to the environment through CloudFormation.
 
@@ -22,11 +22,10 @@ ABI encompasses three separate AWS deployment integrations:
 
 - **Cloud Workload Protection (CWP) for EC2**
 
-  - CWP for EC2 uses AWS Systems Manager Distributor to deploy the Falcon sensor on all new EC2 managed instances.
+  - CWP for EC2 uses AWS Systems Manager Distributor to deploy the Falcon sensor on all new EC2 managed instances. (This method can also be used to protect ECS clusters in EC2 mode.)
 
-    `Note: There are many supported methods for deploying the Falcon sensor. The use of the SSM Distributor Package is provided as a convenience for customers and works well as part of a CloudFormation stack.`
-
-  - This method can also be used to protect ECS clusters in EC2 mode.
+> [!NOTE]
+> There are many supported methods for deploying the Falcon sensor. The use of the SSM Distributor Package is provided as a convenience for customers and works well as part of a CloudFormation stack.`
 
 - **Cloud Workload Protection (CWP) for EKS**
 

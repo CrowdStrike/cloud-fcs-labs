@@ -42,7 +42,7 @@ We’re using nmap scan options to perform a relatively quick scan of all the po
 
 -A Enable OS detection
 
-U-v Increase verbosity
+-v Increase verbosity
 ```
 
 In the resulting output you will find the following. Your results will vary:
@@ -68,15 +68,13 @@ With this detail, we are now ready to begin the investigation of the only servic
 
 Based on the naming convention of the DNS entry, we can surmise that our target is an Amazon Web Services (AWS) Elastic Load Balancer (ELB) and most likely an Application Load Balancer (ALB). This load balancer is the front-end for a web server application and the HTTP header results readily provide the application name Apache Tomcat and version 8.0.32.
 
-Now that we’ve identified the running application and version, let’s see if we can identify an available exploit to leverage against this endpoint. To do so, we will make use of the command line application SearchSploit.
+Now that we’ve identified the running application and version, let’s see if we can identify an available exploit to leverage against this endpoint. To do so, we will make use of two websites containing exploit information.
 
-Check SearchSploit for vulnerabilities associated with Apache Tomcat / 8.0.32
-
-https://www.cvedetails.com/vulnerability-list/vendor_id-45/product_id-887/version_id-554739/Apache-Tomcat-8.0.32.html
+Check CVEdetails.com for vulnerabilities associated with Apache Tomcat v8.0.32: https://www.cvedetails.com/vulnerability-list/vendor_id-45/product_id-887/version_id-554739/Apache-Tomcat-8.0.32.html
 
 ![Screenshof of cvedetails.com](cvedetails.png)
 
-Search for the CVE number on Exploit-DB for additional information on how to launch an attack
+Browse through the known vulnerabilities. Locate `CVE-2017-12617` and note that it is both "known exploited" and has a "public exploit." Since we know this CVE has a public exploit, search for the CVE number on Exploit-DB for additional information on how to launch an attack.
 
 https://www.exploit-db.com/search?cve=2017-12617
 
@@ -93,9 +91,6 @@ The output is the first few lines of an attack script that you will use with the
 ```
 head /opt/metasploit-framework/embedded/framework/modules/exploits/multi/http/tomcat_jsp_upload_bypass.rb -n 24
 ```
-
-> [!NOTE]
-> On regular Kali, the path would be: /usr/share/metasploit-framework/modules/exploits/multi/http/tomcat_jsp_upload_bypass.rb
 
 ![Kali's built-in Tomcat JSP Upload Bypass](kali-exploit.png)
 
